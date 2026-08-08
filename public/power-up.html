@@ -1,29 +1,31 @@
-<!DOCTYPE html>
+<!doctype html>
 <html>
-<head>
-  <script src="https://p.trellocdn.com/power-up.min.js"></script>
-</head>
-<body>
-<script>
-  // Update this once you know your final deployed URL + icon path
-  var ICON = 'https://quick-forms-trello.vercel.app/images/icon.svg';
+  <head>
+    <script src="https://p.trellocdn.com/power-up.min.js"></script>
+  </head>
+  <body>
+    <script>
+      // Update this once you know your final deployed URL + icon path
+      var ICON = "https://quick-forms-trello.vercel.app/images/icon.svg";
 
-  window.TrelloPowerUp.initialize({
-    'board-buttons': function (t, options) {
-      return [{
-        icon: ICON,
-        text: 'Quick Forms',
-        condition: 'always',
-        callback: function (t) {
-          return t.popup({
-            title: 'Quick Forms',
-            url: './popup.html',
-            height: 184
-          });
-        }
-      }];
-    }
-  });
-</script>
-</body>
+      window.TrelloPowerUp.initialize({
+        "board-buttons": function (t, options) {
+          return [
+            {
+              icon: ICON,
+              text: "Quick Forms",
+              condition: "always",
+              callback: function (t) {
+                return t.popup({
+                  title: "Quick Forms",
+                  url: "./popup.html",
+                  height: 230,
+                });
+              },
+            },
+          ];
+        },
+      });
+    </script>
+  </body>
 </html>
