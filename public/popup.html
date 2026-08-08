@@ -1,62 +1,530 @@
-<!DOCTYPE html>
+<!doctype html>
 <html>
-<head>
-  <script src="https://p.trellocdn.com/power-up.min.js"></script>
-  <style>
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      margin: 0;
-      padding: 20px;
-      text-align: center;
-    }
-    h2 { font-size: 16px; margin: 0 0 8px; }
-    p { font-size: 13px; color: #6b778c; margin: 0 0 20px; }
-    button {
-      background: #0079bf;
-      color: white;
-      border: none;
-      border-radius: 3px;
-      padding: 10px 16px;
-      font-size: 14px;
-      cursor: pointer;
-      width: 100%;
-    }
-    button:hover { background: #026aa7; }
-  </style>
-</head>
-<body>
-  <div id="content">
-    <h2>Authorize Quick Forms</h2>
-    <p>To get started, authorize this Power-Up with Trello.</p>
-    <button id="authorize-btn">Authorize Quick Forms</button>
-  </div>
+  <head>
+    <script src="https://p.trellocdn.com/power-up.min.js"></script>
+    <style>
+      :root {
+        color-scheme: dark;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        font-family:
+          -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        margin: 0;
+        padding: 20px;
+        background: #22272b;
+        color: #e8eaed;
+      }
+      h2 {
+        font-size: 15px;
+        margin: 0 0 4px;
+        text-align: center;
+        font-weight: 600;
+      }
+      p.sub {
+        font-size: 12px;
+        color: #9fadbc;
+        text-align: center;
+        margin: 0 0 18px;
+      }
+      .menu-btn {
+        display: block;
+        width: 100%;
+        background: transparent;
+        color: #e8eaed;
+        border: 1px solid #5a6570;
+        border-radius: 6px;
+        padding: 12px;
+        font-size: 14px;
+        margin-bottom: 10px;
+        cursor: pointer;
+        text-align: center;
+      }
+      .menu-btn:hover {
+        border-color: #8c9bab;
+        background: #2c333a;
+      }
+      .primary-btn {
+        display: block;
+        width: 100%;
+        background: #0079bf;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        padding: 10px;
+        font-size: 14px;
+        cursor: pointer;
+        margin-top: 6px;
+      }
+      .primary-btn:hover {
+        background: #026aa7;
+      }
+      .primary-btn:disabled {
+        background: #3b4b5c;
+        cursor: not-allowed;
+      }
+      .secondary-btn {
+        display: block;
+        width: 100%;
+        background: transparent;
+        color: #9fadbc;
+        border: 1px solid #5a6570;
+        border-radius: 6px;
+        padding: 10px;
+        font-size: 13px;
+        cursor: pointer;
+        margin-top: 6px;
+      }
+      .danger-btn {
+        background: transparent;
+        color: #f87168;
+        border: 1px solid #f87168;
+        border-radius: 6px;
+        padding: 8px;
+        font-size: 12px;
+        cursor: pointer;
+        width: 100%;
+        margin-top: 10px;
+      }
+      input[type="text"],
+      select,
+      textarea {
+        width: 100%;
+        padding: 8px;
+        border-radius: 4px;
+        border: 1px solid #5a6570;
+        background: #1d2125;
+        color: #e8eaed;
+        font-size: 13px;
+        margin-bottom: 10px;
+      }
+      label.field-label {
+        font-size: 11px;
+        color: #9fadbc;
+        display: block;
+        margin-bottom: 4px;
+      }
+      .field-row {
+        display: flex;
+        gap: 6px;
+        align-items: flex-start;
+        margin-bottom: 8px;
+      }
+      .field-row input[type="text"] {
+        margin-bottom: 0;
+        flex: 1;
+      }
+      .field-row select {
+        margin-bottom: 0;
+        width: 100px;
+        flex-shrink: 0;
+      }
+      .remove-field {
+        background: transparent;
+        border: 1px solid #5a6570;
+        color: #9fadbc;
+        border-radius: 4px;
+        width: 30px;
+        height: 34px;
+        cursor: pointer;
+        flex-shrink: 0;
+      }
+      .list-item {
+        border: 1px solid #5a6570;
+        border-radius: 6px;
+        padding: 10px 12px;
+        margin-bottom: 8px;
+        cursor: pointer;
+      }
+      .list-item:hover {
+        background: #2c333a;
+      }
+      .list-item .title {
+        font-size: 13px;
+        font-weight: 600;
+      }
+      .list-item .meta {
+        font-size: 11px;
+        color: #9fadbc;
+        margin-top: 2px;
+      }
+      .empty-state {
+        font-size: 12px;
+        color: #9fadbc;
+        text-align: center;
+        padding: 20px 0;
+      }
+      .field-view {
+        border: 1px solid #3b444c;
+        border-radius: 4px;
+        padding: 8px 10px;
+        margin-bottom: 6px;
+        font-size: 12px;
+      }
+      .field-view .ftype {
+        color: #9fadbc;
+        font-size: 10px;
+        text-transform: uppercase;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="content"></div>
 
-  <script>
-    var t = window.TrelloPowerUp.iframe();
+    <script>
+      var t = window.TrelloPowerUp.iframe({
+        appKey: "6877c9596f69f38cce3d590e396b815f", // from https://trello.com/power-ups/admin → your Power-Up → API Key tab
+        appName: "Quick Forms",
+        appAuthor: "Explified",
+      });
+      var state = { view: "loading", forms: [], editingFormId: null };
 
-    function showAuthorized() {
-      document.getElementById('content').innerHTML =
-        '<h2>You\'re authorized</h2><p>Quick Forms is ready to use.</p>';
-    }
+      function uid() {
+        return "f_" + Date.now() + "_" + Math.random().toString(36).slice(2, 7);
+      }
 
-    // If the member already authorized, skip the button entirely
-    t.getRestApi().isAuthorized().then(function (isAuthorized) {
-      if (isAuthorized) showAuthorized();
-    });
+      function loadForms() {
+        return t.get("board", "shared", "quickForms", []);
+      }
 
-    document.getElementById('authorize-btn').addEventListener('click', function () {
-      t.getRestApi()
-        .authorize({ scope: 'read,write', expiration: 'never' })
-        .then(function () {
-          return t.getRestApi().isAuthorized();
-        })
-        .then(function (isAuthorized) {
-          if (isAuthorized) showAuthorized();
-        })
-        .catch(function (err) {
-          console.error('Authorization failed', err);
+      function saveForms(forms) {
+        state.forms = forms;
+        return t.set("board", "shared", "quickForms", forms);
+      }
+
+      function resize() {
+        // let Trello resize the popup iframe to fit new content
+        setTimeout(function () {
+          t.sizeTo("#content");
+        }, 0);
+      }
+
+      function goto(view, opts) {
+        state.view = view;
+        if (opts) Object.assign(state, opts);
+        render();
+      }
+
+      // ---------- Views ----------
+
+      function renderAuthorize() {
+        document.getElementById("content").innerHTML =
+          "<h2>Authorize Quick Forms</h2>" +
+          '<p class="sub">To get started, authorize this Power-Up with Trello.</p>' +
+          '<button class="primary-btn" id="authorize-btn">Authorize Quick Forms</button>';
+
+        document
+          .getElementById("authorize-btn")
+          .addEventListener("click", function () {
+            t.getRestApi()
+              .authorize({ scope: "read,write", expiration: "never" })
+              .then(function () {
+                return t.getRestApi().isAuthorized();
+              })
+              .then(function (isAuthorized) {
+                if (isAuthorized) init();
+              })
+              .catch(function (err) {
+                console.error("Authorization failed", err);
+              });
+          });
+        resize();
+      }
+
+      function renderMenu() {
+        document.getElementById("content").innerHTML =
+          "<h2>Quick Form</h2>" +
+          '<button class="menu-btn" id="btn-create">+ Create Form</button>' +
+          '<button class="menu-btn" id="btn-incomplete">Incomplete Form</button>' +
+          '<button class="menu-btn" id="btn-existing">View Existing Form</button>';
+
+        document
+          .getElementById("btn-create")
+          .addEventListener("click", function () {
+            goto("create", { editingFormId: null });
+          });
+        document
+          .getElementById("btn-incomplete")
+          .addEventListener("click", function () {
+            goto("list", { listStatus: "incomplete" });
+          });
+        document
+          .getElementById("btn-existing")
+          .addEventListener("click", function () {
+            goto("list", { listStatus: "complete" });
+          });
+        resize();
+      }
+
+      function renderList(status) {
+        var items = state.forms.filter(function (f) {
+          return f.status === status;
         });
-    });
-  </script>
-</body>
+        var title =
+          status === "incomplete" ? "Incomplete Forms" : "Existing Forms";
+        var html = "<h2>" + title + "</h2>";
+
+        if (items.length === 0) {
+          html += '<p class="empty-state">Nothing here yet.</p>';
+        } else {
+          items.forEach(function (f) {
+            html +=
+              '<div class="list-item" data-id="' +
+              f.id +
+              '">' +
+              '<div class="title">' +
+              escapeHtml(f.title || "Untitled form") +
+              "</div>" +
+              '<div class="meta">' +
+              f.fields.length +
+              " field(s)</div>" +
+              "</div>";
+          });
+        }
+        html += '<button class="secondary-btn" id="btn-back">Back</button>';
+        document.getElementById("content").innerHTML = html;
+
+        document.querySelectorAll(".list-item").forEach(function (el) {
+          el.addEventListener("click", function () {
+            var id = el.getAttribute("data-id");
+            if (status === "incomplete") {
+              goto("create", { editingFormId: id });
+            } else {
+              goto("detail", { editingFormId: id });
+            }
+          });
+        });
+        document
+          .getElementById("btn-back")
+          .addEventListener("click", function () {
+            goto("menu");
+          });
+        resize();
+      }
+
+      function renderCreate(formId) {
+        var existing = formId
+          ? state.forms.find(function (f) {
+              return f.id === formId;
+            })
+          : null;
+        var draft = existing
+          ? JSON.parse(JSON.stringify(existing))
+          : { id: uid(), title: "", fields: [], status: "incomplete" };
+
+        function fieldRowHtml(field, idx) {
+          return (
+            '<div class="field-row" data-idx="' +
+            idx +
+            '">' +
+            '<input type="text" class="field-label-input" placeholder="Field label" value="' +
+            escapeAttr(field.label) +
+            '">' +
+            '<select class="field-type-input">' +
+            '<option value="text"' +
+            (field.type === "text" ? " selected" : "") +
+            ">Text</option>" +
+            '<option value="textarea"' +
+            (field.type === "textarea" ? " selected" : "") +
+            ">Textarea</option>" +
+            '<option value="checkbox"' +
+            (field.type === "checkbox" ? " selected" : "") +
+            ">Checkbox</option>" +
+            "</select>" +
+            '<button class="remove-field" data-idx="' +
+            idx +
+            '" title="Remove field">&times;</button>' +
+            "</div>"
+          );
+        }
+
+        function draw() {
+          var html =
+            "<h2>" +
+            (existing ? "Edit Form" : "Create Form") +
+            "</h2>" +
+            '<label class="field-label">Form title</label>' +
+            '<input type="text" id="form-title" value="' +
+            escapeAttr(draft.title) +
+            '" placeholder="e.g. Bug report">' +
+            '<label class="field-label">Fields</label>' +
+            '<div id="fields-wrap">' +
+            draft.fields.map(fieldRowHtml).join("") +
+            "</div>" +
+            '<button class="secondary-btn" id="btn-add-field">+ Add Field</button>' +
+            '<button class="primary-btn" id="btn-publish">Publish</button>' +
+            '<button class="secondary-btn" id="btn-save-draft">Save Draft</button>' +
+            '<button class="secondary-btn" id="btn-cancel">Back to Menu</button>';
+          document.getElementById("content").innerHTML = html;
+          wireUp();
+          resize();
+        }
+
+        function syncFromDom() {
+          draft.title = document.getElementById("form-title").value.trim();
+          var rows = document.querySelectorAll("#fields-wrap .field-row");
+          draft.fields = Array.prototype.map.call(rows, function (row) {
+            return {
+              label: row.querySelector(".field-label-input").value.trim(),
+              type: row.querySelector(".field-type-input").value,
+            };
+          });
+        }
+
+        function wireUp() {
+          document
+            .getElementById("btn-add-field")
+            .addEventListener("click", function () {
+              syncFromDom();
+              draft.fields.push({ label: "", type: "text" });
+              draw();
+            });
+          document.querySelectorAll(".remove-field").forEach(function (btn) {
+            btn.addEventListener("click", function () {
+              syncFromDom();
+              var idx = parseInt(btn.getAttribute("data-idx"), 10);
+              draft.fields.splice(idx, 1);
+              draw();
+            });
+          });
+          document
+            .getElementById("btn-save-draft")
+            .addEventListener("click", function () {
+              syncFromDom();
+              draft.status = "incomplete";
+              persist(draft);
+            });
+          document
+            .getElementById("btn-publish")
+            .addEventListener("click", function () {
+              syncFromDom();
+              if (
+                !draft.title ||
+                draft.fields.length === 0 ||
+                draft.fields.some(function (f) {
+                  return !f.label;
+                })
+              ) {
+                alert(
+                  "Give the form a title and make sure every field has a label before publishing.",
+                );
+                return;
+              }
+              draft.status = "complete";
+              draft.completedAt = Date.now();
+              persist(draft);
+            });
+          document
+            .getElementById("btn-cancel")
+            .addEventListener("click", function () {
+              goto("menu");
+            });
+        }
+
+        function persist(finalDraft) {
+          var forms = state.forms.slice();
+          var idx = forms.findIndex(function (f) {
+            return f.id === finalDraft.id;
+          });
+          if (idx >= 0) forms[idx] = finalDraft;
+          else forms.push(finalDraft);
+          saveForms(forms).then(function () {
+            goto("menu");
+          });
+        }
+
+        draw();
+      }
+
+      function renderDetail(formId) {
+        var form = state.forms.find(function (f) {
+          return f.id === formId;
+        });
+        if (!form) {
+          goto("menu");
+          return;
+        }
+
+        var html =
+          "<h2>" +
+          escapeHtml(form.title) +
+          "</h2>" +
+          form.fields
+            .map(function (f) {
+              return (
+                '<div class="field-view"><div class="ftype">' +
+                f.type +
+                "</div>" +
+                escapeHtml(f.label) +
+                "</div>"
+              );
+            })
+            .join("") +
+          '<button class="secondary-btn" id="btn-back">Back</button>' +
+          '<button class="danger-btn" id="btn-delete">Delete Form</button>';
+
+        document.getElementById("content").innerHTML = html;
+        document
+          .getElementById("btn-back")
+          .addEventListener("click", function () {
+            goto("menu");
+          });
+        document
+          .getElementById("btn-delete")
+          .addEventListener("click", function () {
+            if (!confirm('Delete "' + form.title + '"? This cannot be undone.'))
+              return;
+            var forms = state.forms.filter(function (f) {
+              return f.id !== form.id;
+            });
+            saveForms(forms).then(function () {
+              goto("menu");
+            });
+          });
+        resize();
+      }
+
+      function render() {
+        if (state.view === "authorize") renderAuthorize();
+        else if (state.view === "menu") renderMenu();
+        else if (state.view === "list") renderList(state.listStatus);
+        else if (state.view === "create") renderCreate(state.editingFormId);
+        else if (state.view === "detail") renderDetail(state.editingFormId);
+      }
+
+      function escapeHtml(str) {
+        return (str || "").replace(/[&<>"']/g, function (c) {
+          return {
+            "&": "&amp;",
+            "<": "&lt;",
+            ">": "&gt;",
+            '"': "&quot;",
+            "'": "&#39;",
+          }[c];
+        });
+      }
+      function escapeAttr(str) {
+        return escapeHtml(str);
+      }
+
+      function init() {
+        t.getRestApi()
+          .isAuthorized()
+          .then(function (isAuthorized) {
+            if (!isAuthorized) {
+              goto("authorize");
+              return;
+            }
+            loadForms().then(function (forms) {
+              state.forms = forms || [];
+              goto("menu");
+            });
+          });
+      }
+
+      init();
+    </script>
+  </body>
 </html>
