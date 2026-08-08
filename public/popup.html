@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <script src="https://p.trellocdn.com/power-up.min.js"></script>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      margin: 0;
+      padding: 20px;
+      text-align: center;
+    }
+    h2 { font-size: 16px; margin: 0 0 8px; }
+    p { font-size: 13px; color: #6b778c; margin: 0 0 20px; }
+    button {
+      background: #0079bf;
+      color: white;
+      border: none;
+      border-radius: 3px;
+      padding: 10px 16px;
+      font-size: 14px;
+      cursor: pointer;
+      width: 100%;
+    }
+    button:hover { background: #026aa7; }
+  </style>
+</head>
+<body>
+  <div id="content">
+    <h2>Authorize Quick Forms</h2>
+    <p>To get started, authorize this Power-Up with Trello.</p>
+    <button id="authorize-btn">Authorize Quick Forms</button>
+  </div>
+
+  <script>
+    var t = window.TrelloPowerUp.iframe();
+
+    function showAuthorized() {
+      document.getElementById('content').innerHTML =
+        '<h2>You\'re authorized</h2><p>Quick Forms is ready to use.</p>';
+    }
+
+    // If the member already authorized, skip the button entirely
+    t.getRestApi().isAuthorized().then(function (isAuthorized) {
+      if (isAuthorized) showAuthorized();
+    });
+
+    document.getElementById('authorize-btn').addEventListener('click', function () {
+      t.getRestApi()
+        .authorize({ scope: 'read,write', expiration: 'never' })
+        .then(function () {
+          return t.getRestApi().isAuthorized();
+        })
+        .then(function (isAuthorized) {
+          if (isAuthorized) showAuthorized();
+        })
+        .catch(function (err) {
+          console.error('Authorization failed', err);
+        });
+    });
+  </script>
+</body>
+</html>
