@@ -1,0 +1,1014 @@
+<!doctype html>
+<html>
+  <head>
+    <script src="https://p.trellocdn.com/power-up.min.js"></script>
+    <style>
+      :root {
+        color-scheme: dark;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        font-family:
+          -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        margin: 0;
+        background: #1d2125;
+        color: #e8eaed;
+        height: 100vh;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+      }
+
+      /* ---------- Top bar ---------- */
+      #topbar {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        padding: 12px 20px;
+        border-bottom: 1px solid #3b444c;
+        flex-shrink: 0;
+      }
+      #back-btn {
+        width: 34px;
+        height: 34px;
+        border-radius: 50%;
+        border: none;
+        background: #2c333a;
+        color: #e8eaed;
+        font-size: 16px;
+        cursor: pointer;
+      }
+      #back-btn:hover {
+        background: #3b444c;
+      }
+      #topbar .title-block {
+        flex: 1;
+        min-width: 0;
+      }
+      #topbar .breadcrumb {
+        font-size: 11px;
+        color: #9fadbc;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+      }
+      #topbar .breadcrumb b {
+        color: #579dff;
+      }
+      #topbar h1 {
+        font-size: 18px;
+        margin: 2px 0 0;
+        font-weight: 700;
+      }
+      .nav-btn {
+        background: transparent;
+        border: 1px solid #5a6570;
+        color: #9fadbc;
+        border-radius: 6px;
+        padding: 9px 16px;
+        font-size: 13px;
+        cursor: pointer;
+        white-space: nowrap;
+      }
+      .nav-btn:hover {
+        border-color: #8c9bab;
+        color: #e8eaed;
+      }
+      #publish-btn {
+        background: #1f845a;
+        border: none;
+        color: white;
+        border-radius: 6px;
+        padding: 9px 18px;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        white-space: nowrap;
+      }
+      #publish-btn:hover {
+        background: #176b46;
+      }
+
+      /* ---------- Body layout ---------- */
+      #body-wrap {
+        flex: 1;
+        overflow: hidden;
+        display: flex;
+      }
+      #builder-view {
+        flex: 1;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+        padding: 20px;
+        overflow: auto;
+      }
+      .col {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+        min-width: 0;
+      }
+
+      .card {
+        background: #22272b;
+        border: 1px solid #3b444c;
+        border-radius: 8px;
+        padding: 16px;
+      }
+      .card h3 {
+        font-size: 13px;
+        margin: 0 0 14px;
+        color: #579dff;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .field-label {
+        font-size: 11px;
+        color: #9fadbc;
+        display: block;
+        margin: 10px 0 4px;
+      }
+      input[type="text"],
+      textarea,
+      select {
+        width: 100%;
+        padding: 8px 10px;
+        border-radius: 4px;
+        border: 1px solid #5a6570;
+        background: #1d2125;
+        color: #e8eaed;
+        font-size: 13px;
+        font-family: inherit;
+      }
+      textarea {
+        resize: vertical;
+        min-height: 50px;
+      }
+      .hint {
+        font-size: 11px;
+        color: #7a8896;
+        margin-top: 4px;
+      }
+
+      .swatches {
+        display: flex;
+        gap: 8px;
+        margin-top: 6px;
+      }
+      .swatch {
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        border: 2px solid transparent;
+        cursor: pointer;
+      }
+      .swatch.selected {
+        border-color: #e8eaed;
+      }
+
+      .palette-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+        margin-top: 4px;
+      }
+      .palette-item {
+        background: #1d2125;
+        border: 1px solid #3b444c;
+        border-radius: 6px;
+        padding: 10px 12px;
+        font-size: 12.5px;
+        color: #e8eaed;
+        cursor: pointer;
+        text-align: left;
+      }
+      .palette-item:hover {
+        border-color: #579dff;
+        background: #23303d;
+      }
+      .palette-item.wide {
+        grid-column: 1 / -1;
+      }
+
+      /* ---------- Preview column ---------- */
+      #preview-banner {
+        border-radius: 8px 8px 0 0;
+        padding: 16px;
+        position: relative;
+      }
+      #preview-banner .target-badge {
+        position: absolute;
+        top: 12px;
+        right: 12px;
+        background: rgba(0, 0, 0, 0.25);
+        font-size: 10px;
+        padding: 3px 8px;
+        border-radius: 10px;
+      }
+      #preview-banner h2 {
+        margin: 6px 0 4px;
+        font-size: 17px;
+      }
+      #preview-banner p {
+        margin: 0;
+        font-size: 12px;
+        opacity: 0.9;
+      }
+      #fields-preview {
+        border: 1px solid #3b444c;
+        border-top: none;
+        border-radius: 0 0 8px 8px;
+        padding: 12px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+
+      .field-card {
+        background: #22272b;
+        border: 1px solid #3b444c;
+        border-radius: 6px;
+        padding: 10px 12px;
+      }
+      .field-card .frow {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        margin-bottom: 8px;
+      }
+      .badge {
+        font-size: 10px;
+        font-weight: 700;
+        padding: 2px 7px;
+        border-radius: 4px;
+        text-transform: uppercase;
+      }
+      .badge.idx {
+        background: #3b444c;
+        color: #b6c2cf;
+      }
+      .badge.kind {
+        background: #0c3050;
+        color: #85b8ff;
+      }
+      .badge.req {
+        background: #4b1113;
+        color: #ff9c9c;
+      }
+      .badge.opt {
+        background: #2c333a;
+        color: #9fadbc;
+      }
+      .frow .spacer {
+        flex: 1;
+      }
+      .icon-btn {
+        background: transparent;
+        border: 1px solid #3b444c;
+        color: #9fadbc;
+        border-radius: 4px;
+        width: 26px;
+        height: 26px;
+        font-size: 12px;
+        cursor: pointer;
+      }
+      .icon-btn:hover {
+        border-color: #8c9bab;
+        color: #e8eaed;
+      }
+      .icon-btn:disabled {
+        opacity: 0.3;
+        cursor: not-allowed;
+      }
+      .icon-btn.danger {
+        color: #f87168;
+        border-color: #5a2b2b;
+      }
+      .icon-btn.config-open {
+        background: #0c3050;
+        color: #85b8ff;
+        border-color: #0c3050;
+      }
+
+      .field-name {
+        font-size: 13px;
+        font-weight: 600;
+        margin-bottom: 6px;
+      }
+      .field-preview-input {
+        background: #1d2125;
+        border: 1px solid #3b444c;
+        border-radius: 4px;
+        padding: 8px 10px;
+        font-size: 12px;
+        color: #6b7a89;
+      }
+      .config-panel {
+        margin-top: 10px;
+        border-top: 1px dashed #3b444c;
+        padding-top: 10px;
+      }
+      .config-panel .row2 {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+      }
+      .checkbox-row {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        margin-top: 8px;
+        font-size: 12px;
+        color: #9fadbc;
+      }
+
+      /* ---------- Overlay list (Incomplete / Existing) ---------- */
+      #overlay-view {
+        flex: 1;
+        padding: 24px;
+        overflow: auto;
+        display: none;
+      }
+      #overlay-view.active {
+        display: block;
+      }
+      #builder-view.hidden {
+        display: none;
+      }
+      .overlay-item {
+        border: 1px solid #3b444c;
+        border-radius: 6px;
+        padding: 12px 14px;
+        margin-bottom: 8px;
+        cursor: pointer;
+        max-width: 480px;
+      }
+      .overlay-item:hover {
+        background: #22272b;
+      }
+      .overlay-item .t {
+        font-weight: 600;
+        font-size: 13px;
+      }
+      .overlay-item .m {
+        font-size: 11px;
+        color: #9fadbc;
+        margin-top: 3px;
+      }
+      #overlay-back {
+        background: transparent;
+        border: none;
+        color: #579dff;
+        font-size: 13px;
+        cursor: pointer;
+        margin-bottom: 14px;
+        padding: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="topbar">
+      <button id="back-btn" title="Close">&#8592;</button>
+      <div class="title-block">
+        <div class="breadcrumb">
+          <b>FORM BUILDER</b> &middot; Trello Card Generator
+        </div>
+        <h1 id="screen-title">Create New Trello Form</h1>
+      </div>
+      <button class="nav-btn" id="nav-incomplete">Incomplete Form</button>
+      <button class="nav-btn" id="nav-existing">View Existing Form</button>
+      <button id="publish-btn">&#128190; Publish Form</button>
+    </div>
+
+    <div id="body-wrap">
+      <div id="builder-view"></div>
+      <div id="overlay-view">
+        <button id="overlay-back">&#8592; Back to builder</button>
+        <div
+          id="overlay-title"
+          style="font-size: 15px; font-weight: 700; margin-bottom: 14px"
+        ></div>
+        <div id="overlay-list"></div>
+      </div>
+    </div>
+
+    <script>
+      var t = window.TrelloPowerUp.iframe({
+        appKey: "YOUR_TRELLO_API_KEY", // same key as popup.html
+        appName: "Quick Forms",
+        appAuthor: "Your Name or Company",
+      });
+
+      var THEMES = [
+        "#0079BF",
+        "#1F845A",
+        "#6B3FA0",
+        "#C9184A",
+        "#D9730D",
+        "#0891B2",
+        "#5A6570",
+      ];
+      var PALETTE = [
+        { kind: "startdate", label: "Start date" },
+        { kind: "duedate", label: "Due date" },
+        { kind: "members", label: "Members" },
+        { kind: "attachment", label: "Attachment" },
+        { kind: "text", label: "Text" },
+        { kind: "numbers", label: "Numbers" },
+        { kind: "dropdown", label: "Dropdown" },
+        {
+          kind: "customfield",
+          label: "Custom field (Checkbox, Rating, Email, Date, etc.)",
+          wide: true,
+        },
+      ];
+
+      var draft = null;
+      var lists = [];
+      var allForms = [];
+      var saveTimer = null;
+
+      function uid() {
+        return "f_" + Date.now() + "_" + Math.random().toString(36).slice(2, 7);
+      }
+      function fid() {
+        return (
+          "fld_" + Date.now() + "_" + Math.random().toString(36).slice(2, 5)
+        );
+      }
+      function escapeHtml(str) {
+        return (str || "").replace(/[&<>"']/g, function (c) {
+          return {
+            "&": "&amp;",
+            "<": "&lt;",
+            ">": "&gt;",
+            '"': "&quot;",
+            "'": "&#39;",
+          }[c];
+        });
+      }
+
+      function defaultField(kind, label) {
+        var f = {
+          id: fid(),
+          kind: kind,
+          label: label,
+          required: false,
+          placeholder: "",
+        };
+        if (kind === "dropdown") f.options = ["Option 1", "Option 2"];
+        if (kind === "customfield") f.subtype = "checkbox";
+        return f;
+      }
+
+      function newDraft() {
+        return {
+          id: uid(),
+          title: "New Trello Form",
+          description: "",
+          targetListId: "",
+          targetListName: "",
+          theme: THEMES[0],
+          status: "incomplete",
+          fields: [
+            Object.assign(defaultField("title", "Card Title / Task Summary"), {
+              required: true,
+              locked: true,
+              placeholder: "e.g. Upgrade payment gateway library",
+            }),
+            Object.assign(defaultField("description", "Detailed Description"), {
+              required: true,
+              locked: true,
+              placeholder: "Provide full context or instructions...",
+            }),
+          ],
+        };
+      }
+
+      function loadForms() {
+        return t.get("board", "shared", "quickForms", []);
+      }
+      function saveForms(forms) {
+        allForms = forms;
+        return t.set("board", "shared", "quickForms", forms);
+      }
+
+      function persistDraft(markComplete) {
+        if (markComplete) {
+          draft.status = "complete";
+          draft.completedAt = Date.now();
+        }
+        var forms = allForms.slice();
+        var idx = forms.findIndex(function (f) {
+          return f.id === draft.id;
+        });
+        if (idx >= 0) forms[idx] = draft;
+        else forms.push(draft);
+        return saveForms(forms);
+      }
+
+      function scheduleAutosave() {
+        clearTimeout(saveTimer);
+        saveTimer = setTimeout(function () {
+          persistDraft(false);
+        }, 500);
+      }
+
+      // ---------- Rendering ----------
+
+      function render() {
+        document.getElementById("screen-title").textContent =
+          draft.status === "complete"
+            ? "Edit Trello Form"
+            : "Create New Trello Form";
+
+        var listOptions =
+          '<option value="">Choose a list&hellip;</option>' +
+          lists
+            .map(function (l) {
+              return (
+                '<option value="' +
+                l.id +
+                '"' +
+                (l.id === draft.targetListId ? " selected" : "") +
+                ">" +
+                escapeHtml(l.name) +
+                "</option>"
+              );
+            })
+            .join("");
+
+        var left =
+          '<div class="col">' +
+          '<div class="card">' +
+          "<h3>&#10024; Form Header &amp; Destination</h3>" +
+          '<label class="field-label">Form Title</label>' +
+          '<input type="text" id="in-title" value="' +
+          escapeHtml(draft.title) +
+          '">' +
+          '<label class="field-label">Description / Subtitle</label>' +
+          '<textarea id="in-desc">' +
+          escapeHtml(draft.description) +
+          "</textarea>" +
+          '<label class="field-label">Select Target List Name *</label>' +
+          '<select id="in-list">' +
+          listOptions +
+          "</select>" +
+          '<div class="hint">Cards created via this form will land in this list.</div>' +
+          '<label class="field-label">Theme Banner Accent</label>' +
+          '<div class="swatches">' +
+          THEMES.map(function (c) {
+            return (
+              '<div class="swatch' +
+              (c === draft.theme ? " selected" : "") +
+              '" data-color="' +
+              c +
+              '" style="background:' +
+              c +
+              '"></div>'
+            );
+          }).join("") +
+          "</div>" +
+          "</div>" +
+          '<div class="card">' +
+          "<h3>Add Fields to Form Builder</h3>" +
+          '<div class="hint" style="margin:-8px 0 8px;">Click any field to add</div>' +
+          '<div class="palette-grid">' +
+          PALETTE.map(function (p) {
+            return (
+              '<button class="palette-item' +
+              (p.wide ? " wide" : "") +
+              '" data-kind="' +
+              p.kind +
+              '">' +
+              escapeHtml(p.label) +
+              "</button>"
+            );
+          }).join("") +
+          "</div>" +
+          "</div>" +
+          "</div>";
+
+        var right =
+          '<div class="col">' +
+          '<div id="preview-banner" style="background:' +
+          draft.theme +
+          '">' +
+          '<div class="target-badge">Target: ' +
+          escapeHtml(draft.targetListName || "No list selected") +
+          "</div>" +
+          "<h2>" +
+          escapeHtml(draft.title || "Untitled form") +
+          "</h2>" +
+          "<p>" +
+          escapeHtml(draft.description || "") +
+          "</p>" +
+          "</div>" +
+          '<div id="fields-preview">' +
+          draft.fields.map(fieldCardHtml).join("") +
+          "</div>" +
+          "</div>";
+
+        document.getElementById("builder-view").innerHTML = left + right;
+        wireUp();
+      }
+
+      function fieldPreviewControl(f) {
+        switch (f.kind) {
+          case "description":
+            return (
+              '<div class="field-preview-input">' +
+              escapeHtml(
+                f.placeholder || "Provide full context or instructions...",
+              ) +
+              "</div>"
+            );
+          case "startdate":
+          case "duedate":
+            return '<div class="field-preview-input">mm/dd/yyyy</div>';
+          case "members":
+            return '<div class="field-preview-input">Select assignees from board team</div>';
+          case "attachment":
+            return '<div class="field-preview-input">Click to attach a file</div>';
+          case "dropdown":
+            return (
+              '<div class="field-preview-input">' +
+              (f.options || []).join(" &middot; ") +
+              "</div>"
+            );
+          case "customfield":
+            return (
+              '<div class="field-preview-input">Custom &middot; ' +
+              (f.subtype || "text") +
+              "</div>"
+            );
+          default:
+            return (
+              '<div class="field-preview-input">' +
+              escapeHtml(f.placeholder || "Enter value&hellip;") +
+              "</div>"
+            );
+        }
+      }
+
+      function configPanelHtml(f) {
+        var extra = "";
+        if (
+          f.kind === "title" ||
+          f.kind === "description" ||
+          f.kind === "text" ||
+          f.kind === "numbers"
+        ) {
+          extra =
+            '<div class="row2">' +
+            '<div><label class="field-label">Field Label</label><input type="text" class="cfg-label" value="' +
+            escapeHtml(f.label) +
+            '"></div>' +
+            '<div><label class="field-label">Placeholder Text</label><input type="text" class="cfg-placeholder" value="' +
+            escapeHtml(f.placeholder || "") +
+            '"></div>' +
+            "</div>";
+        } else if (f.kind === "dropdown") {
+          extra =
+            '<label class="field-label">Field Label</label><input type="text" class="cfg-label" value="' +
+            escapeHtml(f.label) +
+            '">' +
+            '<label class="field-label">Options (comma separated)</label>' +
+            '<input type="text" class="cfg-options" value="' +
+            escapeHtml((f.options || []).join(", ")) +
+            '">';
+        } else if (f.kind === "customfield") {
+          extra =
+            '<div class="row2">' +
+            '<div><label class="field-label">Field Label</label><input type="text" class="cfg-label" value="' +
+            escapeHtml(f.label) +
+            '"></div>' +
+            '<div><label class="field-label">Custom Field Type</label>' +
+            '<select class="cfg-subtype">' +
+            ["checkbox", "rating", "email", "date", "text"]
+              .map(function (s) {
+                return (
+                  '<option value="' +
+                  s +
+                  '"' +
+                  (s === f.subtype ? " selected" : "") +
+                  ">" +
+                  s +
+                  "</option>"
+                );
+              })
+              .join("") +
+            "</select></div>" +
+            "</div>";
+        } else {
+          extra =
+            '<label class="field-label">Field Label</label><input type="text" class="cfg-label" value="' +
+            escapeHtml(f.label) +
+            '">';
+        }
+
+        var reqToggle = f.locked
+          ? ""
+          : '<label class="checkbox-row"><input type="checkbox" class="cfg-required"' +
+            (f.required ? " checked" : "") +
+            "> Required field</label>";
+
+        return '<div class="config-panel">' + extra + reqToggle + "</div>";
+      }
+
+      function fieldCardHtml(f, idx) {
+        return (
+          '<div class="field-card" data-id="' +
+          f.id +
+          '">' +
+          '<div class="frow">' +
+          '<span class="badge idx">#' +
+          (idx + 1) +
+          "</span>" +
+          '<span class="badge kind">' +
+          f.kind +
+          "</span>" +
+          '<span class="badge ' +
+          (f.required ? "req" : "opt") +
+          '">' +
+          (f.required ? "Required" : "Optional") +
+          "</span>" +
+          '<span class="spacer"></span>' +
+          '<button class="icon-btn cfg-toggle' +
+          (f._open ? " config-open" : "") +
+          '" title="Config">&#8645;</button>' +
+          '<button class="icon-btn up-btn" ' +
+          (idx <= 1 ? "disabled" : "") +
+          ' title="Move up">&#8593;</button>' +
+          '<button class="icon-btn down-btn" title="Move down">&#8595;</button>' +
+          '<button class="icon-btn danger del-btn" ' +
+          (f.locked ? "disabled" : "") +
+          ' title="Delete">&#128465;</button>' +
+          "</div>" +
+          '<div class="field-name">' +
+          escapeHtml(f.label) +
+          "</div>" +
+          fieldPreviewControl(f) +
+          (f._open ? configPanelHtml(f) : "") +
+          "</div>"
+        );
+      }
+
+      function fieldById(id) {
+        return draft.fields.find(function (f) {
+          return f.id === id;
+        });
+      }
+
+      function wireUp() {
+        document
+          .getElementById("in-title")
+          .addEventListener("input", function (e) {
+            draft.title = e.target.value;
+            document.querySelector("#preview-banner h2").textContent =
+              draft.title || "Untitled form";
+            scheduleAutosave();
+          });
+        document
+          .getElementById("in-desc")
+          .addEventListener("input", function (e) {
+            draft.description = e.target.value;
+            document.querySelector("#preview-banner p").textContent =
+              draft.description || "";
+            scheduleAutosave();
+          });
+        document
+          .getElementById("in-list")
+          .addEventListener("change", function (e) {
+            draft.targetListId = e.target.value;
+            var l = lists.find(function (l) {
+              return l.id === draft.targetListId;
+            });
+            draft.targetListName = l ? l.name : "";
+            document.querySelector(".target-badge").textContent =
+              "Target: " + (draft.targetListName || "No list selected");
+            scheduleAutosave();
+          });
+        document.querySelectorAll(".swatch").forEach(function (el) {
+          el.addEventListener("click", function () {
+            draft.theme = el.getAttribute("data-color");
+            scheduleAutosave();
+            render();
+          });
+        });
+        document.querySelectorAll(".palette-item").forEach(function (el) {
+          el.addEventListener("click", function () {
+            var kind = el.getAttribute("data-kind");
+            var paletteDef = PALETTE.find(function (p) {
+              return p.kind === kind;
+            });
+            var f = defaultField(kind, paletteDef.label);
+            f._open = true;
+            draft.fields.push(f);
+            scheduleAutosave();
+            render();
+          });
+        });
+
+        document.querySelectorAll(".field-card").forEach(function (card) {
+          var id = card.getAttribute("data-id");
+          var f = fieldById(id);
+
+          card
+            .querySelector(".cfg-toggle")
+            .addEventListener("click", function () {
+              f._open = !f._open;
+              render();
+            });
+          card.querySelector(".up-btn").addEventListener("click", function () {
+            var idx = draft.fields.findIndex(function (x) {
+              return x.id === id;
+            });
+            if (idx > 1) {
+              var tmp = draft.fields[idx - 1];
+              draft.fields[idx - 1] = draft.fields[idx];
+              draft.fields[idx] = tmp;
+              scheduleAutosave();
+              render();
+            }
+          });
+          card
+            .querySelector(".down-btn")
+            .addEventListener("click", function () {
+              var idx = draft.fields.findIndex(function (x) {
+                return x.id === id;
+              });
+              if (idx < draft.fields.length - 1 && idx >= 0) {
+                var tmp = draft.fields[idx + 1];
+                draft.fields[idx + 1] = draft.fields[idx];
+                draft.fields[idx] = tmp;
+                scheduleAutosave();
+                render();
+              }
+            });
+          card.querySelector(".del-btn").addEventListener("click", function () {
+            if (f.locked) return;
+            draft.fields = draft.fields.filter(function (x) {
+              return x.id !== id;
+            });
+            scheduleAutosave();
+            render();
+          });
+
+          var cfgLabel = card.querySelector(".cfg-label");
+          if (cfgLabel)
+            cfgLabel.addEventListener("input", function (e) {
+              f.label = e.target.value;
+              card.querySelector(".field-name").textContent = f.label;
+              scheduleAutosave();
+            });
+          var cfgPlaceholder = card.querySelector(".cfg-placeholder");
+          if (cfgPlaceholder)
+            cfgPlaceholder.addEventListener("input", function (e) {
+              f.placeholder = e.target.value;
+              scheduleAutosave();
+            });
+          var cfgOptions = card.querySelector(".cfg-options");
+          if (cfgOptions)
+            cfgOptions.addEventListener("input", function (e) {
+              f.options = e.target.value
+                .split(",")
+                .map(function (s) {
+                  return s.trim();
+                })
+                .filter(Boolean);
+              scheduleAutosave();
+            });
+          var cfgSubtype = card.querySelector(".cfg-subtype");
+          if (cfgSubtype)
+            cfgSubtype.addEventListener("change", function (e) {
+              f.subtype = e.target.value;
+              scheduleAutosave();
+            });
+          var cfgRequired = card.querySelector(".cfg-required");
+          if (cfgRequired)
+            cfgRequired.addEventListener("change", function (e) {
+              f.required = e.target.checked;
+              scheduleAutosave();
+              render();
+            });
+        });
+      }
+
+      // ---------- Overlay (Incomplete / Existing) ----------
+
+      function showOverlay(status) {
+        document.getElementById("builder-view").classList.add("hidden");
+        var overlay = document.getElementById("overlay-view");
+        overlay.classList.add("active");
+        document.getElementById("overlay-title").textContent =
+          status === "incomplete" ? "Incomplete Forms" : "Existing Forms";
+
+        var items = allForms.filter(function (f) {
+          return f.status === status && f.id !== draft.id;
+        });
+        var html =
+          items.length === 0
+            ? '<div class="hint">Nothing here yet.</div>'
+            : items
+                .map(function (f) {
+                  return (
+                    '<div class="overlay-item" data-id="' +
+                    f.id +
+                    '">' +
+                    '<div class="t">' +
+                    escapeHtml(f.title || "Untitled form") +
+                    "</div>" +
+                    '<div class="m">' +
+                    f.fields.length +
+                    " field(s)</div>" +
+                    "</div>"
+                  );
+                })
+                .join("");
+        document.getElementById("overlay-list").innerHTML = html;
+
+        document.querySelectorAll(".overlay-item").forEach(function (el) {
+          el.addEventListener("click", function () {
+            var id = el.getAttribute("data-id");
+            draft = JSON.parse(
+              JSON.stringify(
+                allForms.find(function (f) {
+                  return f.id === id;
+                }),
+              ),
+            );
+            hideOverlay();
+            render();
+          });
+        });
+      }
+
+      function hideOverlay() {
+        document.getElementById("overlay-view").classList.remove("active");
+        document.getElementById("builder-view").classList.remove("hidden");
+      }
+
+      // ---------- Init ----------
+
+      document
+        .getElementById("back-btn")
+        .addEventListener("click", function () {
+          clearTimeout(saveTimer);
+          persistDraft(false).then(function () {
+            t.closeModal();
+          });
+        });
+      document
+        .getElementById("publish-btn")
+        .addEventListener("click", function () {
+          if (!draft.title.trim() || !draft.targetListId) {
+            alert(
+              "Give the form a title and pick a target list before publishing.",
+            );
+            return;
+          }
+          clearTimeout(saveTimer);
+          persistDraft(true).then(function () {
+            t.closeModal();
+          });
+        });
+      document
+        .getElementById("nav-incomplete")
+        .addEventListener("click", function () {
+          showOverlay("incomplete");
+        });
+      document
+        .getElementById("nav-existing")
+        .addEventListener("click", function () {
+          showOverlay("complete");
+        });
+      document
+        .getElementById("overlay-back")
+        .addEventListener("click", hideOverlay);
+
+      Promise.all([
+        loadForms(),
+        t.lists("id", "name"),
+        t.arg("formId", ""),
+      ]).then(function (results) {
+        allForms = results[0] || [];
+        lists = results[1] || [];
+        var formId = results[2];
+
+        if (formId) {
+          var existing = allForms.find(function (f) {
+            return f.id === formId;
+          });
+          draft = existing ? JSON.parse(JSON.stringify(existing)) : newDraft();
+        } else {
+          draft = newDraft();
+        }
+        render();
+      });
+    </script>
+  </body>
+</html>

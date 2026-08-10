@@ -195,17 +195,33 @@
       }
 
       function resize() {
-        requestAnimationFrame(function () {
-          var el = document.getElementById("content");
-          var height = el.offsetHeight + 40; // +40 = body's 20px top/bottom padding
-          t.sizeTo(height);
-        });
+        // let Trello resize the popup iframe to fit new content
+        setTimeout(function () {
+          t.sizeTo("#content");
+        }, 0);
       }
 
       function goto(view, opts) {
         state.view = view;
         if (opts) Object.assign(state, opts);
         render();
+      }
+
+      function openFormBuilder(formId) {
+        t.modal({
+          url: "./form-builder.html",
+          fullscreen: true,
+          accentColor: "blue",
+          title: "Quick Forms \u2014 Form Builder",
+          args: { formId: formId || "" },
+          callback: function () {
+            // runs when the modal is closed; refresh state from storage
+            loadForms().then(function (forms) {
+              state.forms = forms || [];
+              goto("menu");
+            });
+          },
+        });
       }
 
       // ---------- Views ----------
@@ -244,7 +260,7 @@
         document
           .getElementById("btn-create")
           .addEventListener("click", function () {
-            goto("create", { editingFormId: null });
+            openFormBuilder(null);
           });
         document
           .getElementById("btn-incomplete")
@@ -291,7 +307,7 @@
           el.addEventListener("click", function () {
             var id = el.getAttribute("data-id");
             if (status === "incomplete") {
-              goto("create", { editingFormId: id });
+              openFormBuilder(id);
             } else {
               goto("detail", { editingFormId: id });
             }
@@ -303,140 +319,6 @@
             goto("menu");
           });
         resize();
-      }
-
-      function renderCreate(formId) {
-        var existing = formId
-          ? state.forms.find(function (f) {
-              return f.id === formId;
-            })
-          : null;
-        var draft = existing
-          ? JSON.parse(JSON.stringify(existing))
-          : { id: uid(), title: "", fields: [], status: "incomplete" };
-
-        function fieldRowHtml(field, idx) {
-          return (
-            '<div class="field-row" data-idx="' +
-            idx +
-            '">' +
-            '<input type="text" class="field-label-input" placeholder="Field label" value="' +
-            escapeAttr(field.label) +
-            '">' +
-            '<select class="field-type-input">' +
-            '<option value="text"' +
-            (field.type === "text" ? " selected" : "") +
-            ">Text</option>" +
-            '<option value="textarea"' +
-            (field.type === "textarea" ? " selected" : "") +
-            ">Textarea</option>" +
-            '<option value="checkbox"' +
-            (field.type === "checkbox" ? " selected" : "") +
-            ">Checkbox</option>" +
-            "</select>" +
-            '<button class="remove-field" data-idx="' +
-            idx +
-            '" title="Remove field">&times;</button>' +
-            "</div>"
-          );
-        }
-
-        function draw() {
-          var html =
-            "<h2>" +
-            (existing ? "Edit Form" : "Create Form") +
-            "</h2>" +
-            '<label class="field-label">Form title</label>' +
-            '<input type="text" id="form-title" value="' +
-            escapeAttr(draft.title) +
-            '" placeholder="e.g. Bug report">' +
-            '<label class="field-label">Fields</label>' +
-            '<div id="fields-wrap">' +
-            draft.fields.map(fieldRowHtml).join("") +
-            "</div>" +
-            '<button class="secondary-btn" id="btn-add-field">+ Add Field</button>' +
-            '<button class="primary-btn" id="btn-publish">Publish</button>' +
-            '<button class="secondary-btn" id="btn-save-draft">Save Draft</button>' +
-            '<button class="secondary-btn" id="btn-cancel">Back to Menu</button>';
-          document.getElementById("content").innerHTML = html;
-          wireUp();
-          resize();
-        }
-
-        function syncFromDom() {
-          draft.title = document.getElementById("form-title").value.trim();
-          var rows = document.querySelectorAll("#fields-wrap .field-row");
-          draft.fields = Array.prototype.map.call(rows, function (row) {
-            return {
-              label: row.querySelector(".field-label-input").value.trim(),
-              type: row.querySelector(".field-type-input").value,
-            };
-          });
-        }
-
-        function wireUp() {
-          document
-            .getElementById("btn-add-field")
-            .addEventListener("click", function () {
-              syncFromDom();
-              draft.fields.push({ label: "", type: "text" });
-              draw();
-            });
-          document.querySelectorAll(".remove-field").forEach(function (btn) {
-            btn.addEventListener("click", function () {
-              syncFromDom();
-              var idx = parseInt(btn.getAttribute("data-idx"), 10);
-              draft.fields.splice(idx, 1);
-              draw();
-            });
-          });
-          document
-            .getElementById("btn-save-draft")
-            .addEventListener("click", function () {
-              syncFromDom();
-              draft.status = "incomplete";
-              persist(draft);
-            });
-          document
-            .getElementById("btn-publish")
-            .addEventListener("click", function () {
-              syncFromDom();
-              if (
-                !draft.title ||
-                draft.fields.length === 0 ||
-                draft.fields.some(function (f) {
-                  return !f.label;
-                })
-              ) {
-                alert(
-                  "Give the form a title and make sure every field has a label before publishing.",
-                );
-                return;
-              }
-              draft.status = "complete";
-              draft.completedAt = Date.now();
-              persist(draft);
-            });
-          document
-            .getElementById("btn-cancel")
-            .addEventListener("click", function () {
-              goto("menu");
-            });
-        }
-
-        function persist(finalDraft) {
-          var forms = state.forms.slice();
-          var idx = forms.findIndex(function (f) {
-            return f.id === finalDraft.id;
-          });
-          if (idx >= 0) forms[idx] = finalDraft;
-          else forms.push(finalDraft);
-          saveForms(forms).then(function () {
-            goto("menu");
-          });
-        }
-
-        draw();
       }
 
       function renderDetail(formId) {
@@ -454,9 +336,14 @@
           "</h2>" +
           form.fields
             .map(function (f) {
+              var typeLabel =
+                f.kind === "customfield"
+                  ? "Custom \u00b7 " + (f.subtype || "text")
+                  : f.kind;
               return (
                 '<div class="field-view"><div class="ftype">' +
-                f.type +
+                escapeHtml(typeLabel) +
+                (f.required ? " \u00b7 required" : "") +
                 "</div>" +
                 escapeHtml(f.label) +
                 "</div>"
@@ -491,7 +378,6 @@
         if (state.view === "authorize") renderAuthorize();
         else if (state.view === "menu") renderMenu();
         else if (state.view === "list") renderList(state.listStatus);
-        else if (state.view === "create") renderCreate(state.editingFormId);
         else if (state.view === "detail") renderDetail(state.editingFormId);
       }
 
