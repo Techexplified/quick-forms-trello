@@ -195,10 +195,11 @@
       }
 
       function resize() {
-        // let Trello resize the popup iframe to fit new content
-        setTimeout(function () {
-          t.sizeTo("#content");
-        }, 0);
+        requestAnimationFrame(function () {
+          var el = document.getElementById("content");
+          var height = el.offsetHeight + 40; // +40 = body's 20px top/bottom padding
+          t.sizeTo(height);
+        });
       }
 
       function goto(view, opts) {
