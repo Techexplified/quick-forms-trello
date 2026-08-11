@@ -510,11 +510,9 @@
         return saveForms(forms);
       }
 
+      // No autosave: nothing is written to storage until "Publish Form" is clicked.
       function scheduleAutosave() {
-        clearTimeout(saveTimer);
-        saveTimer = setTimeout(function () {
-          persistDraft(false);
-        }, 500);
+        /* intentionally does nothing for now */
       }
 
       // ---------- Rendering ----------
@@ -918,21 +916,53 @@
                   return (
                     '<div class="overlay-item" data-id="' +
                     f.id +
-                    '">' +
+                    '" style="display:flex;align-items:center;justify-content:space-between;gap:10px;">' +
+                    '<div style="flex:1;min-width:0;">' +
                     '<div class="t">' +
                     escapeHtml(f.title || "Untitled form") +
                     "</div>" +
                     '<div class="m">' +
                     f.fields.length +
                     " field(s)</div>" +
+                    "</div>" +
+                    (status === "complete"
+                      ? '<button class="icon-btn danger overlay-del-btn" data-id="' +
+                        f.id +
+                        '" title="Delete this form">&#128465;</button>'
+                      : "") +
                     "</div>"
                   );
                 })
                 .join("");
         document.getElementById("overlay-list").innerHTML = html;
 
+        document.querySelectorAll(".overlay-del-btn").forEach(function (btn) {
+          btn.addEventListener("click", function (e) {
+            e.stopPropagation();
+            var id = btn.getAttribute("data-id");
+            var form = allForms.find(function (f) {
+              return f.id === id;
+            });
+            if (
+              !confirm(
+                'Delete "' +
+                  (form ? form.title : "this form") +
+                  '"? This cannot be undone.',
+              )
+            )
+              return;
+            var forms = allForms.filter(function (f) {
+              return f.id !== id;
+            });
+            saveForms(forms).then(function () {
+              showOverlay(status);
+            });
+          });
+        });
+
         document.querySelectorAll(".overlay-item").forEach(function (el) {
-          el.addEventListener("click", function () {
+          el.addEventListener("click", function (e) {
+            if (e.target.closest(".overlay-del-btn")) return;
             var id = el.getAttribute("data-id");
             draft = JSON.parse(
               JSON.stringify(
@@ -958,9 +988,7 @@
         .getElementById("back-btn")
         .addEventListener("click", function () {
           clearTimeout(saveTimer);
-          persistDraft(false).then(function () {
-            t.closeModal();
-          });
+          t.closeModal(); // discard any unpublished changes — nothing is saved unless Published
         });
       document
         .getElementById("publish-btn")
