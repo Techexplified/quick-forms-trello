@@ -474,15 +474,15 @@
           theme: THEMES[0],
           status: "incomplete",
           fields: [
-            Object.assign(defaultField("title", "Card Title / Task Summary"), {
+            Object.assign(defaultField("title", "Card Title"), {
               required: true,
               locked: true,
-              placeholder: "e.g. Upgrade payment gateway library",
+              placeholder: "",
             }),
-            Object.assign(defaultField("description", "Detailed Description"), {
+            Object.assign(defaultField("description", "Description"), {
               required: true,
               locked: true,
-              placeholder: "Provide full context or instructions...",
+              placeholder: "",
             }),
           ],
         };
@@ -619,10 +619,8 @@
           case "description":
             return (
               '<div class="field-preview-input">' +
-              escapeHtml(
-                f.placeholder || "Provide full context or instructions...",
-              ) +
-              "</div>"
+              escapeHtml(f.placeholder) +
+              "&nbsp;</div>"
             );
           case "startdate":
           case "duedate":
@@ -646,75 +644,21 @@
           default:
             return (
               '<div class="field-preview-input">' +
-              escapeHtml(f.placeholder || "Enter value&hellip;") +
-              "</div>"
+              escapeHtml(f.placeholder) +
+              "&nbsp;</div>"
             );
         }
       }
 
       function configPanelHtml(f) {
-        var extra = "";
-        if (
-          f.kind === "title" ||
-          f.kind === "description" ||
-          f.kind === "text" ||
-          f.kind === "numbers"
-        ) {
-          extra =
-            '<div class="row2">' +
-            '<div><label class="field-label">Field Label</label><input type="text" class="cfg-label" value="' +
-            escapeHtml(f.label) +
-            '"></div>' +
-            '<div><label class="field-label">Placeholder Text</label><input type="text" class="cfg-placeholder" value="' +
-            escapeHtml(f.placeholder || "") +
-            '"></div>' +
-            "</div>";
-        } else if (f.kind === "dropdown") {
-          extra =
-            '<label class="field-label">Field Label</label><input type="text" class="cfg-label" value="' +
-            escapeHtml(f.label) +
-            '">' +
-            '<label class="field-label">Options (comma separated)</label>' +
-            '<input type="text" class="cfg-options" value="' +
-            escapeHtml((f.options || []).join(", ")) +
-            '">';
-        } else if (f.kind === "customfield") {
-          extra =
-            '<div class="row2">' +
-            '<div><label class="field-label">Field Label</label><input type="text" class="cfg-label" value="' +
-            escapeHtml(f.label) +
-            '"></div>' +
-            '<div><label class="field-label">Custom Field Type</label>' +
-            '<select class="cfg-subtype">' +
-            ["checkbox", "rating", "email", "date", "text"]
-              .map(function (s) {
-                return (
-                  '<option value="' +
-                  s +
-                  '"' +
-                  (s === f.subtype ? " selected" : "") +
-                  ">" +
-                  s +
-                  "</option>"
-                );
-              })
-              .join("") +
-            "</select></div>" +
-            "</div>";
-        } else {
-          extra =
-            '<label class="field-label">Field Label</label><input type="text" class="cfg-label" value="' +
-            escapeHtml(f.label) +
-            '">';
-        }
-
-        var reqToggle = f.locked
-          ? ""
-          : '<label class="checkbox-row"><input type="checkbox" class="cfg-required"' +
-            (f.required ? " checked" : "") +
-            "> Required field</label>";
-
-        return '<div class="config-panel">' + extra + reqToggle + "</div>";
+        if (f.locked) return ""; // Title/Description have nothing configurable
+        return (
+          '<div class="config-panel">' +
+          '<label class="checkbox-row"><input type="checkbox" class="cfg-required"' +
+          (f.required ? " checked" : "") +
+          "> Required field</label>" +
+          "</div>"
+        );
       }
 
       function fieldCardHtml(f, idx) {
@@ -723,9 +667,6 @@
           f.id +
           '">' +
           '<div class="frow">' +
-          '<span class="badge idx">#' +
-          (idx + 1) +
-          "</span>" +
           '<span class="badge kind">' +
           f.kind +
           "</span>" +
@@ -735,13 +676,11 @@
           (f.required ? "Required" : "Optional") +
           "</span>" +
           '<span class="spacer"></span>' +
-          '<button class="icon-btn cfg-toggle' +
+          '<button class="icon-btn edit-toggle' +
           (f._open ? " config-open" : "") +
-          '" title="Config">&#8645;</button>' +
-          '<button class="icon-btn up-btn" ' +
-          (idx <= 1 ? "disabled" : "") +
-          ' title="Move up">&#8593;</button>' +
-          '<button class="icon-btn down-btn" title="Move down">&#8595;</button>' +
+          '" ' +
+          (f.locked ? "disabled" : "") +
+          ' title="Edit">&#9998;</button>' +
           '<button class="icon-btn danger del-btn" ' +
           (f.locked ? "disabled" : "") +
           ' title="Delete">&#128465;</button>' +
@@ -815,38 +754,13 @@
           var id = card.getAttribute("data-id");
           var f = fieldById(id);
 
-          card
-            .querySelector(".cfg-toggle")
-            .addEventListener("click", function () {
+          var editBtn = card.querySelector(".edit-toggle");
+          if (editBtn && !f.locked) {
+            editBtn.addEventListener("click", function () {
               f._open = !f._open;
               render();
             });
-          card.querySelector(".up-btn").addEventListener("click", function () {
-            var idx = draft.fields.findIndex(function (x) {
-              return x.id === id;
-            });
-            if (idx > 1) {
-              var tmp = draft.fields[idx - 1];
-              draft.fields[idx - 1] = draft.fields[idx];
-              draft.fields[idx] = tmp;
-              scheduleAutosave();
-              render();
-            }
-          });
-          card
-            .querySelector(".down-btn")
-            .addEventListener("click", function () {
-              var idx = draft.fields.findIndex(function (x) {
-                return x.id === id;
-              });
-              if (idx < draft.fields.length - 1 && idx >= 0) {
-                var tmp = draft.fields[idx + 1];
-                draft.fields[idx + 1] = draft.fields[idx];
-                draft.fields[idx] = tmp;
-                scheduleAutosave();
-                render();
-              }
-            });
+          }
           card.querySelector(".del-btn").addEventListener("click", function () {
             if (f.locked) return;
             draft.fields = draft.fields.filter(function (x) {
@@ -856,36 +770,6 @@
             render();
           });
 
-          var cfgLabel = card.querySelector(".cfg-label");
-          if (cfgLabel)
-            cfgLabel.addEventListener("input", function (e) {
-              f.label = e.target.value;
-              card.querySelector(".field-name").textContent = f.label;
-              scheduleAutosave();
-            });
-          var cfgPlaceholder = card.querySelector(".cfg-placeholder");
-          if (cfgPlaceholder)
-            cfgPlaceholder.addEventListener("input", function (e) {
-              f.placeholder = e.target.value;
-              scheduleAutosave();
-            });
-          var cfgOptions = card.querySelector(".cfg-options");
-          if (cfgOptions)
-            cfgOptions.addEventListener("input", function (e) {
-              f.options = e.target.value
-                .split(",")
-                .map(function (s) {
-                  return s.trim();
-                })
-                .filter(Boolean);
-              scheduleAutosave();
-            });
-          var cfgSubtype = card.querySelector(".cfg-subtype");
-          if (cfgSubtype)
-            cfgSubtype.addEventListener("change", function (e) {
-              f.subtype = e.target.value;
-              scheduleAutosave();
-            });
           var cfgRequired = card.querySelector(".cfg-required");
           if (cfgRequired)
             cfgRequired.addEventListener("change", function (e) {
@@ -980,7 +864,7 @@
         document.getElementById("builder-view").classList.remove("hidden");
       }
 
-      // ---------- Init -----------
+      // ---------- Init ----------
 
       document
         .getElementById("back-btn")
