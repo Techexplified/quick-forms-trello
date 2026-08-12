@@ -192,6 +192,27 @@
       .palette-item.wide {
         grid-column: 1 / -1;
       }
+      .palette-item:disabled,
+      .palette-item.added {
+        opacity: 0.45;
+        cursor: not-allowed;
+        border-color: #3b444c;
+        background: #1d2125;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+      }
+      .palette-item.added:hover {
+        border-color: #3b444c;
+        background: #1d2125;
+      }
+      .added-tag {
+        font-size: 10px;
+        font-weight: 700;
+        color: #4bce97;
+        white-space: nowrap;
+      }
 
       /* ---------- Preview column ---------- */
       #preview-banner {
@@ -413,6 +434,7 @@
       var PALETTE = [
         { kind: "startdate", label: "Start date" },
         { kind: "duedate", label: "Due date" },
+        { kind: "labels", label: "Labels" },
         { kind: "members", label: "Members" },
         { kind: "attachment", label: "Attachment" },
         { kind: "text", label: "Text" },
@@ -423,6 +445,16 @@
           label: "Custom field (Checkbox, Rating, Email, Date, etc.)",
           wide: true,
         },
+      ];
+
+      // Trello cards can only carry one of each of these — once added,
+      // the palette option is disabled so it can't be added a second time.
+      var SINGLETON_KINDS = [
+        "startdate",
+        "duedate",
+        "labels",
+        "members",
+        "attachment",
       ];
 
       var draft = null;
@@ -575,13 +607,24 @@
           '<div class="hint" style="margin:-8px 0 8px;">Click any field to add</div>' +
           '<div class="palette-grid">' +
           PALETTE.map(function (p) {
+            var alreadyAdded =
+              SINGLETON_KINDS.indexOf(p.kind) !== -1 &&
+              draft.fields.some(function (f) {
+                return f.kind === p.kind;
+              });
             return (
               '<button class="palette-item' +
               (p.wide ? " wide" : "") +
+              (alreadyAdded ? " added" : "") +
               '" data-kind="' +
               p.kind +
-              '">' +
+              '"' +
+              (alreadyAdded ? " disabled" : "") +
+              ">" +
               escapeHtml(p.label) +
+              (alreadyAdded
+                ? ' <span class="added-tag">&#10003; Added</span>'
+                : "") +
               "</button>"
             );
           }).join("") +
@@ -624,6 +667,8 @@
           case "startdate":
           case "duedate":
             return '<div class="field-preview-input">mm/dd/yyyy</div>';
+          case "labels":
+            return '<div class="field-preview-input">Select labels from board</div>';
           case "members":
             return '<div class="field-preview-input">Select assignees from board team</div>';
           case "attachment":
@@ -738,6 +783,14 @@
         document.querySelectorAll(".palette-item").forEach(function (el) {
           el.addEventListener("click", function () {
             var kind = el.getAttribute("data-kind");
+            if (
+              SINGLETON_KINDS.indexOf(kind) !== -1 &&
+              draft.fields.some(function (f) {
+                return f.kind === kind;
+              })
+            ) {
+              return; // already on the card, can't add a second one
+            }
             var paletteDef = PALETTE.find(function (p) {
               return p.kind === kind;
             });
