@@ -788,7 +788,6 @@
               return p.kind === kind;
             });
             var f = defaultField(kind, paletteDef.label);
-            f._open = true;
             draft.fields.push(f);
             scheduleAutosave();
             render();
