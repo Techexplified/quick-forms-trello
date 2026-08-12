@@ -271,10 +271,6 @@
         background: #3b444c;
         color: #b6c2cf;
       }
-      .badge.kind {
-        background: #0c3050;
-        color: #85b8ff;
-      }
       .badge.req {
         background: #4b1113;
         color: #ff9c9c;
@@ -315,9 +311,9 @@
       }
 
       .field-name {
-        font-size: 13px;
-        font-weight: 600;
-        margin-bottom: 6px;
+        font-size: 14px;
+        font-weight: 700;
+        color: #e8eaed;
       }
       .field-preview-input {
         background: #1d2125;
@@ -711,8 +707,8 @@
           f.id +
           '">' +
           '<div class="frow">' +
-          '<span class="badge kind">' +
-          f.kind +
+          '<span class="field-name">' +
+          escapeHtml(f.label) +
           "</span>" +
           '<span class="badge ' +
           (f.required ? "req" : "opt") +
@@ -728,9 +724,6 @@
           '<button class="icon-btn danger del-btn" ' +
           (f.locked ? "disabled" : "") +
           ' title="Delete">&#128465;</button>' +
-          "</div>" +
-          '<div class="field-name">' +
-          escapeHtml(f.label) +
           "</div>" +
           fieldPreviewControl(f) +
           (f._open ? configPanelHtml(f) : "") +
