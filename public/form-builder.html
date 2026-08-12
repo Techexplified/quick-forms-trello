@@ -864,13 +864,10 @@
       }
 
       // ---------- Init ----------
+      // Note: closing is handled by Trello's native modal "X" now that the
+      // custom back button is removed. Nothing autosaves, so closing without
+      // clicking Publish Form simply discards the in-progress draft, same as before.
 
-      document
-        .getElementById("back-btn")
-        .addEventListener("click", function () {
-          clearTimeout(saveTimer);
-          t.closeModal(); // discard any unpublished changes — nothing is saved unless Published
-        });
       document
         .getElementById("publish-btn")
         .addEventListener("click", function () {
