@@ -495,9 +495,9 @@
         </div>
         <h1 id="screen-title">Create New Trello Form</h1>
       </div>
-      <button class="nav-btn" id="nav-incomplete">Incomplete Form</button>
       <button class="nav-btn" id="nav-existing">View Existing Form</button>
-      <button id="publish-btn">Publish Form</button>
+      <button class="nav-btn" id="share-btn">Share</button>
+      <button id="publish-btn">Save Form</button>
     </div>
 
     <div id="body-wrap">
@@ -1111,9 +1111,17 @@
                     f.fields.length +
                     " field(s)</div>" +
                     "</div>" +
+                    '<div style="display:flex;gap:6px;">' +
+                    '<button class="icon-btn overlay-edit-btn" data-id="' +
+                    f.id +
+                    '" title="Edit this form">&#9998;</button>' +
+                    '<button class="icon-btn overlay-share-btn" data-id="' +
+                    f.id +
+                    '" title="Share this form">&#128279;</button>' +
                     '<button class="icon-btn danger overlay-del-btn" data-id="' +
                     f.id +
                     '" title="Delete this form">&#128465;</button>' +
+                    "</div>" +
                     "</div>"
                   );
                 })
@@ -1144,10 +1152,12 @@
           });
         });
 
-        document.querySelectorAll(".overlay-item").forEach(function (el) {
-          el.addEventListener("click", function (e) {
-            if (e.target.closest(".overlay-del-btn")) return;
-            var id = el.getAttribute("data-id");
+        document.querySelectorAll(".overlay-edit-btn").forEach(function (btn) {
+          btn.addEventListener("click", function (e) {
+            e.stopPropagation();
+
+            var id = btn.getAttribute("data-id");
+
             draft = JSON.parse(
               JSON.stringify(
                 allForms.find(function (f) {
@@ -1155,8 +1165,35 @@
                 }),
               ),
             );
+
             hideOverlay();
             render();
+          });
+        });
+
+        document.querySelectorAll(".overlay-share-btn").forEach(function (btn) {
+          btn.addEventListener("click", function (e) {
+            e.stopPropagation();
+
+            var id = btn.getAttribute("data-id");
+
+            var form = allForms.find(function (f) {
+              return f.id === id;
+            });
+
+            if (!form) return;
+
+            // Replace this with your existing public form URL generation logic.
+            var shareUrl = form.shareUrl;
+
+            if (!shareUrl) {
+              alert("Share URL is not available for this form yet.");
+              return;
+            }
+
+            navigator.clipboard.writeText(shareUrl).then(function () {
+              alert("Form link copied to clipboard.");
+            });
           });
         });
       }
@@ -1186,9 +1223,23 @@
           });
         });
       document
-        .getElementById("nav-incomplete")
+        .getElementById("share-btn")
         .addEventListener("click", function () {
-          showOverlay("incomplete");
+          if (!draft || draft.status !== "complete") {
+            alert("Save the form before sharing it.");
+            return;
+          }
+
+          var shareUrl = draft.shareUrl;
+
+          if (!shareUrl) {
+            alert("Share URL is not available for this form yet.");
+            return;
+          }
+
+          navigator.clipboard.writeText(shareUrl).then(function () {
+            alert("Form link copied to clipboard.");
+          });
         });
       document
         .getElementById("nav-existing")
