@@ -342,6 +342,107 @@
         color: #9fadbc;
       }
 
+      /* ---------- Board-data select (Labels / Members) ---------- */
+      .board-select {
+        position: relative;
+      }
+      .board-select-trigger {
+        background: #1d2125;
+        border: 1px solid #5a6570;
+        border-radius: 4px;
+        padding: 8px 10px;
+        font-size: 12px;
+        color: #6b7a89;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 6px;
+      }
+      .board-select-trigger.has-value {
+        color: #e8eaed;
+      }
+      .board-select.open .board-select-trigger {
+        border-color: #579dff;
+      }
+      .board-select-trigger .caret {
+        font-size: 10px;
+        color: #9fadbc;
+        flex-shrink: 0;
+      }
+      .board-select-panel {
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: calc(100% + 4px);
+        background: #1d2125;
+        border: 1px solid #5a6570;
+        border-radius: 6px;
+        max-height: 220px;
+        overflow-y: auto;
+        z-index: 20;
+        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.4);
+      }
+      .board-select-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 9px 10px;
+        font-size: 13px;
+        color: #e8eaed;
+        cursor: pointer;
+      }
+      .board-select-item:hover {
+        background: #2c333a;
+      }
+      .board-select-item .chk {
+        width: 14px;
+        height: 14px;
+        border-radius: 3px;
+        border: 1px solid #7a8896;
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 10px;
+      }
+      .board-select-item.selected .chk {
+        background: #579dff;
+        border-color: #579dff;
+        color: #1d2125;
+      }
+      .board-select-item .swatch-dot {
+        width: 28px;
+        height: 14px;
+        border-radius: 3px;
+        flex-shrink: 0;
+      }
+      .board-select-item .avatar {
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        background: #579dff;
+        color: #06122c;
+        font-size: 10px;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+      }
+      .board-select-item .name {
+        flex: 1;
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .board-select-empty {
+        padding: 10px;
+        font-size: 12px;
+        color: #7a8896;
+      }
+
       /* ---------- Overlay list (Incomplete / Existing) ---------- */
       #overlay-view {
         flex: 1;
@@ -457,6 +558,24 @@
       var lists = [];
       var allForms = [];
       var saveTimer = null;
+      var boardLabels = [];
+      var boardMembers = [];
+
+      // Maps Trello's label color keywords to the hex swatch Trello itself
+      // uses, so label chips in the dropdown look like they do on the board.
+      var LABEL_COLOR_HEX = {
+        green: "#4BCE97",
+        yellow: "#F5CD47",
+        orange: "#FAA53D",
+        red: "#F87168",
+        purple: "#9F8FEF",
+        blue: "#579DFF",
+        sky: "#6CC3E0",
+        lime: "#94C748",
+        pink: "#E774BB",
+        black: "#8590A2",
+        null: "#DFE1E6",
+      };
 
       function uid() {
         return "f_" + Date.now() + "_" + Math.random().toString(36).slice(2, 7);
@@ -476,6 +595,22 @@
             "'": "&#39;",
           }[c];
         });
+      }
+
+      function labelDisplayName(l) {
+        return l.name && l.name.trim() ? l.name : l.color || "no color";
+      }
+      function memberInitials(m) {
+        if (m.initials) return m.initials;
+        var name = m.fullName || m.username || "?";
+        return name
+          .split(" ")
+          .map(function (p) {
+            return p[0];
+          })
+          .join("")
+          .slice(0, 2)
+          .toUpperCase();
       }
 
       function defaultField(kind, label) {
@@ -664,9 +799,25 @@
           case "duedate":
             return '<div class="field-preview-input">mm/dd/yyyy</div>';
           case "labels":
-            return '<div class="field-preview-input">Select labels from board</div>';
+            return boardSelectHtml(f, "label", boardLabels, function (l) {
+              return (
+                '<span class="swatch-dot" style="background:' +
+                (LABEL_COLOR_HEX[l.color] || LABEL_COLOR_HEX["null"]) +
+                '"></span><span class="name">' +
+                escapeHtml(labelDisplayName(l)) +
+                "</span>"
+              );
+            });
           case "members":
-            return '<div class="field-preview-input">Select assignees from board team</div>';
+            return boardSelectHtml(f, "member", boardMembers, function (m) {
+              return (
+                '<span class="avatar">' +
+                escapeHtml(memberInitials(m)) +
+                '</span><span class="name">' +
+                escapeHtml(m.fullName || m.username) +
+                "</span>"
+              );
+            });
           case "attachment":
             return '<div class="field-preview-input">Click to attach a file</div>';
           case "dropdown":
@@ -688,6 +839,80 @@
               "&nbsp;</div>"
             );
         }
+      }
+
+      function selectedIdsFor(f, entityType) {
+        var key =
+          entityType === "label" ? "selectedLabelIds" : "selectedMemberIds";
+        if (!f[key]) f[key] = [];
+        return f[key];
+      }
+
+      function boardSelectHtml(f, entityType, items, itemInnerHtml) {
+        var selected = selectedIdsFor(f, entityType);
+        var selectedItems = items.filter(function (it) {
+          return selected.indexOf(it.id) !== -1;
+        });
+        var triggerLabel =
+          selectedItems.length === 0
+            ? entityType === "label"
+              ? "Select..."
+              : "Select..."
+            : selectedItems
+                .map(function (it) {
+                  return entityType === "label"
+                    ? labelDisplayName(it)
+                    : it.fullName || it.username;
+                })
+                .join(", ");
+
+        var panel = "";
+        if (f._ddOpen) {
+          panel =
+            '<div class="board-select-panel">' +
+            (items.length === 0
+              ? '<div class="board-select-empty">No ' +
+                (entityType === "label" ? "labels" : "members") +
+                " on this board yet.</div>"
+              : items
+                  .map(function (it) {
+                    var isSel = selected.indexOf(it.id) !== -1;
+                    return (
+                      '<div class="board-select-item' +
+                      (isSel ? " selected" : "") +
+                      '" data-entity="' +
+                      entityType +
+                      '" data-item-id="' +
+                      it.id +
+                      '">' +
+                      '<span class="chk">' +
+                      (isSel ? "&#10003;" : "") +
+                      "</span>" +
+                      itemInnerHtml(it) +
+                      "</div>"
+                    );
+                  })
+                  .join("")) +
+            "</div>";
+        }
+
+        return (
+          '<div class="board-select' +
+          (f._ddOpen ? " open" : "") +
+          '" data-dd-field="' +
+          f.id +
+          '">' +
+          '<div class="board-select-trigger' +
+          (selectedItems.length ? " has-value" : "") +
+          '">' +
+          '<span class="name">' +
+          escapeHtml(triggerLabel) +
+          "</span>" +
+          '<span class="caret">&#9662;</span>' +
+          "</div>" +
+          panel +
+          "</div>"
+        );
       }
 
       function configPanelHtml(f) {
@@ -822,6 +1047,39 @@
               render();
             });
         });
+
+        document
+          .querySelectorAll(".board-select-trigger")
+          .forEach(function (el) {
+            el.addEventListener("click", function (e) {
+              e.stopPropagation();
+              var wrap = el.closest(".board-select");
+              var id = wrap.getAttribute("data-dd-field");
+              var wasOpen = fieldById(id)._ddOpen;
+              // Only one dropdown open at a time.
+              draft.fields.forEach(function (x) {
+                x._ddOpen = false;
+              });
+              fieldById(id)._ddOpen = !wasOpen;
+              render();
+            });
+          });
+        document.querySelectorAll(".board-select-item").forEach(function (el) {
+          el.addEventListener("click", function (e) {
+            e.stopPropagation();
+            var wrap = el.closest(".board-select");
+            var fieldId = wrap.getAttribute("data-dd-field");
+            var entityType = el.getAttribute("data-entity");
+            var itemId = el.getAttribute("data-item-id");
+            var target = fieldById(fieldId);
+            var ids = selectedIdsFor(target, entityType);
+            var pos = ids.indexOf(itemId);
+            if (pos === -1) ids.push(itemId);
+            else ids.splice(pos, 1);
+            scheduleAutosave();
+            render();
+          });
+        });
       }
 
       // ---------- Overlay (Incomplete / Existing) ----------
@@ -941,14 +1199,31 @@
         .getElementById("overlay-back")
         .addEventListener("click", hideOverlay);
 
+      // Click anywhere outside an open Labels/Members dropdown closes it.
+      document.addEventListener("click", function () {
+        if (!draft) return;
+        var anyOpen = draft.fields.some(function (f) {
+          return f._ddOpen;
+        });
+        if (anyOpen) {
+          draft.fields.forEach(function (f) {
+            f._ddOpen = false;
+          });
+          render();
+        }
+      });
+
       Promise.all([
         loadForms(),
         t.lists("id", "name"),
+        t.board("labels", "members"),
         t.arg("formId", ""),
       ]).then(function (results) {
         allForms = results[0] || [];
         lists = results[1] || [];
-        var formId = results[2];
+        boardLabels = (results[2] && results[2].labels) || [];
+        boardMembers = (results[2] && results[2].members) || [];
+        var formId = results[3];
 
         if (formId) {
           var existing = allForms.find(function (f) {
