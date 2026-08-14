@@ -1,0 +1,350 @@
+<!doctype html>
+<html>
+  <head>
+    <script src="https://p.trellocdn.com/power-up.min.js"></script>
+    <style>
+      :root {
+        color-scheme: dark;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        font-family:
+          -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        margin: 0;
+        background: #1d2125;
+        color: #e8eaed;
+        height: 100vh;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+      }
+
+      #toolbar {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 18px 24px;
+        flex-shrink: 0;
+      }
+      #search-input {
+        flex: 1;
+        padding: 10px 12px;
+        border-radius: 6px;
+        border: 1px solid #5a6570;
+        background: #22272b;
+        color: #e8eaed;
+        font-size: 13px;
+      }
+      #search-input:focus {
+        outline: none;
+        border-color: #579dff;
+      }
+      #create-btn {
+        background: #579dff;
+        color: #06122c;
+        border: none;
+        border-radius: 6px;
+        padding: 10px 16px;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        white-space: nowrap;
+      }
+      #create-btn:hover {
+        background: #85b8ff;
+      }
+
+      #table-wrap {
+        flex: 1;
+        overflow: auto;
+        padding: 0 24px 24px;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+      thead th {
+        text-align: left;
+        font-size: 12px;
+        font-weight: 600;
+        color: #9fadbc;
+        padding: 8px 10px;
+        border-bottom: 1px solid #3b444c;
+        user-select: none;
+      }
+      tbody td {
+        padding: 12px 10px;
+        border-bottom: 1px solid #2c333a;
+        font-size: 13px;
+        vertical-align: middle;
+      }
+      tbody tr:hover {
+        background: #22272b;
+      }
+      .name-cell {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-weight: 600;
+      }
+      .name-cell .doc-icon {
+        color: #9fadbc;
+        flex-shrink: 0;
+      }
+      .meta-cell {
+        color: #9fadbc;
+      }
+      .creator-cell {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: #9fadbc;
+      }
+      .avatar {
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        background: #579dff;
+        color: #06122c;
+        font-size: 10px;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+      }
+      .actions-cell {
+        white-space: nowrap;
+        text-align: right;
+      }
+      .edit-btn {
+        background: transparent;
+        border: 1px solid #5a6570;
+        color: #e8eaed;
+        border-radius: 4px;
+        padding: 6px 10px;
+        font-size: 12px;
+        cursor: pointer;
+        margin-right: 6px;
+      }
+      .edit-btn:hover {
+        border-color: #8c9bab;
+      }
+      .icon-btn {
+        background: transparent;
+        border: 1px solid #3b444c;
+        color: #9fadbc;
+        border-radius: 4px;
+        width: 28px;
+        height: 28px;
+        font-size: 13px;
+        cursor: pointer;
+        margin-right: 6px;
+      }
+      .icon-btn:last-child {
+        margin-right: 0;
+      }
+      .icon-btn:hover {
+        border-color: #8c9bab;
+        color: #e8eaed;
+      }
+      .empty-state {
+        font-size: 13px;
+        color: #9fadbc;
+        text-align: center;
+        padding: 40px 0;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="toolbar">
+      <input type="text" id="search-input" placeholder="Search for a form..." />
+      <button id="create-btn">+ Create a new form</button>
+    </div>
+    <div id="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Target List</th>
+            <th>Creator</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="rows"></tbody>
+      </table>
+      <div class="empty-state" id="empty-state" style="display: none">
+        No forms yet. Create your first one to get started.
+      </div>
+    </div>
+
+    <script>
+      var t = window.TrelloPowerUp.iframe({
+        appKey: "6877c9596f69f38cce3d590e396b815f", // from https://trello.com/power-ups/admin → your Power-Up → API Key tab
+        appName: "Quick Forms",
+        appAuthor: "Explified",
+      });
+
+      var allForms = [];
+      var searchTerm = "";
+
+      function loadForms() {
+        return t.get("board", "shared", "quickForms", []);
+      }
+
+      function escapeHtml(str) {
+        return (str || "").replace(/[&<>"']/g, function (c) {
+          return {
+            "&": "&amp;",
+            "<": "&lt;",
+            ">": "&gt;",
+            '"': "&quot;",
+            "'": "&#39;",
+          }[c];
+        });
+      }
+
+      function initials(name) {
+        if (!name) return "?";
+        return name.trim().charAt(0).toUpperCase();
+      }
+
+      function openFormBuilder(formId) {
+        t.modal({
+          url: "./form-builder.html",
+          fullscreen: true,
+          accentColor: "blue",
+          title: "Quick Forms \u2014 Form Builder",
+          args: { formId: formId || "" },
+          callback: function () {
+            // runs when the form builder modal is closed; refresh this list
+            loadForms().then(function (forms) {
+              allForms = forms || [];
+              render();
+            });
+          },
+        });
+      }
+
+      function render() {
+        requestAnimationFrame(function () {
+          var el = document.getElementById("rows");
+          var height = el.offsetHeight;
+        });
+
+        var term = searchTerm.trim().toLowerCase();
+        var items = allForms.filter(function (f) {
+          if (!term) return true;
+          return (f.title || "").toLowerCase().indexOf(term) !== -1;
+        });
+
+        var rowsEl = document.getElementById("rows");
+        var emptyEl = document.getElementById("empty-state");
+
+        if (items.length === 0) {
+          rowsEl.innerHTML = "";
+          emptyEl.style.display = "block";
+          return;
+        }
+        emptyEl.style.display = "none";
+
+        rowsEl.innerHTML = items
+          .map(function (f) {
+            var creatorName = f.creatorFullName || "";
+            var targetList = f.targetListName || "No list selected";
+            var hasShareUrl = !!f.shareUrl;
+            return (
+              '<tr data-id="' +
+              f.id +
+              '">' +
+              "<td>" +
+              '<div class="name-cell">' +
+              '<span class="doc-icon">&#128196;</span>' +
+              "<span>" +
+              escapeHtml(f.title || "Untitled form") +
+              "</span>" +
+              "</div>" +
+              "</td>" +
+              '<td class="meta-cell">' +
+              escapeHtml(targetList) +
+              "</td>" +
+              '<td class="creator-cell">' +
+              (creatorName
+                ? '<span class="avatar">' +
+                  initials(creatorName) +
+                  "</span><span>" +
+                  escapeHtml(creatorName) +
+                  "</span>"
+                : "&mdash;") +
+              "</td>" +
+              '<td class="actions-cell">' +
+              '<button class="edit-btn edit-btn-action" data-id="' +
+              f.id +
+              '">&#9998; Edit</button>' +
+              '<button class="icon-btn open-btn-action" data-id="' +
+              f.id +
+              '" title="Open form"' +
+              (hasShareUrl ? "" : " disabled") +
+              ">&#8599;</button>" +
+              '<button class="icon-btn share-btn-action" data-id="' +
+              f.id +
+              '" title="Copy share link"' +
+              (hasShareUrl ? "" : " disabled") +
+              ">&#128279;</button>" +
+              "</td>" +
+              "</tr>"
+            );
+          })
+          .join("");
+
+        document.querySelectorAll(".edit-btn-action").forEach(function (btn) {
+          btn.addEventListener("click", function (e) {
+            e.stopPropagation();
+            openFormBuilder(btn.getAttribute("data-id"));
+          });
+        });
+        document.querySelectorAll(".open-btn-action").forEach(function (btn) {
+          btn.addEventListener("click", function (e) {
+            e.stopPropagation();
+            var form = allForms.find(function (f) {
+              return f.id === btn.getAttribute("data-id");
+            });
+            if (!form || !form.shareUrl) return;
+            window.open(form.shareUrl, "_blank");
+          });
+        });
+        document.querySelectorAll(".share-btn-action").forEach(function (btn) {
+          btn.addEventListener("click", function (e) {
+            e.stopPropagation();
+            var form = allForms.find(function (f) {
+              return f.id === btn.getAttribute("data-id");
+            });
+            if (!form || !form.shareUrl) return;
+            navigator.clipboard.writeText(form.shareUrl).then(function () {
+              alert("Form link copied to clipboard.");
+            });
+          });
+        });
+      }
+
+      document
+        .getElementById("create-btn")
+        .addEventListener("click", function () {
+          openFormBuilder(null);
+        });
+      document
+        .getElementById("search-input")
+        .addEventListener("input", function (e) {
+          searchTerm = e.target.value;
+          render();
+        });
+
+      loadForms().then(function (forms) {
+        allForms = forms || [];
+        render();
+      });
+    </script>
+  </body>
+</html>
