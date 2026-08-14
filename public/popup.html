@@ -269,123 +269,12 @@
       function renderMenu() {
         document.getElementById("content").innerHTML =
           "<h2>Quick Form</h2>" +
-          '<button class="menu-btn" id="btn-create">+ Create Form</button>' +
-          '<button class="menu-btn" id="btn-incomplete">Incomplete Form</button>' +
-          '<button class="menu-btn" id="btn-existing">View Existing Form</button>';
+          '<button class="menu-btn" id="btn-create">+ Create Form</button>';
 
         document
           .getElementById("btn-create")
           .addEventListener("click", function () {
             openFormsList();
-          });
-        document
-          .getElementById("btn-incomplete")
-          .addEventListener("click", function () {
-            goto("list", { listStatus: "incomplete" });
-          });
-        document
-          .getElementById("btn-existing")
-          .addEventListener("click", function () {
-            goto("list", { listStatus: "complete" });
-          });
-        resize();
-      }
-
-      function renderList(status) {
-        var items = state.forms.filter(function (f) {
-          return f.status === status;
-        });
-        var title =
-          status === "incomplete" ? "Incomplete Forms" : "Existing Forms";
-        var html = "<h2>" + title + "</h2>";
-
-        if (items.length === 0) {
-          html += '<p class="empty-state">Nothing here yet.</p>';
-        } else {
-          items.forEach(function (f) {
-            html +=
-              '<div class="list-item" data-id="' +
-              f.id +
-              '">' +
-              '<div class="title">' +
-              escapeHtml(f.title || "Untitled form") +
-              "</div>" +
-              '<div class="meta">' +
-              f.fields.length +
-              " field(s)</div>" +
-              "</div>";
-          });
-        }
-        html += '<button class="secondary-btn" id="btn-back">Back</button>';
-        document.getElementById("content").innerHTML = html;
-
-        document.querySelectorAll(".list-item").forEach(function (el) {
-          el.addEventListener("click", function () {
-            var id = el.getAttribute("data-id");
-            if (status === "incomplete") {
-              openFormBuilder(id);
-            } else {
-              goto("detail", { editingFormId: id });
-            }
-          });
-        });
-        document
-          .getElementById("btn-back")
-          .addEventListener("click", function () {
-            goto("menu");
-          });
-        resize();
-      }
-
-      function renderDetail(formId) {
-        var form = state.forms.find(function (f) {
-          return f.id === formId;
-        });
-        if (!form) {
-          goto("menu");
-          return;
-        }
-
-        var html =
-          "<h2>" +
-          escapeHtml(form.title) +
-          "</h2>" +
-          form.fields
-            .map(function (f) {
-              var typeLabel =
-                f.kind === "customfield"
-                  ? "Custom \u00b7 " + (f.subtype || "text")
-                  : f.kind;
-              return (
-                '<div class="field-view"><div class="ftype">' +
-                escapeHtml(typeLabel) +
-                (f.required ? " \u00b7 required" : "") +
-                "</div>" +
-                escapeHtml(f.label) +
-                "</div>"
-              );
-            })
-            .join("") +
-          '<button class="secondary-btn" id="btn-back">Back</button>' +
-          '<button class="danger-btn" id="btn-delete">Delete Form</button>';
-
-        document.getElementById("content").innerHTML = html;
-        document
-          .getElementById("btn-back")
-          .addEventListener("click", function () {
-            goto("menu");
-          });
-        document
-          .getElementById("btn-delete")
-          .addEventListener("click", function () {
-            if (!confirm('Delete "' + form.title + '"? This cannot be undone.'))
-              return;
-            var forms = state.forms.filter(function (f) {
-              return f.id !== form.id;
-            });
-            saveForms(forms).then(function () {
-              goto("menu");
-            });
           });
         resize();
       }
@@ -393,8 +282,6 @@
       function render() {
         if (state.view === "authorize") renderAuthorize();
         else if (state.view === "menu") renderMenu();
-        else if (state.view === "list") renderList(state.listStatus);
-        else if (state.view === "detail") renderDetail(state.editingFormId);
       }
 
       function escapeHtml(str) {
