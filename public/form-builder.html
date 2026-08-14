@@ -442,49 +442,6 @@
         font-size: 12px;
         color: #7a8896;
       }
-
-      /* ---------- Overlay list (Incomplete / Existing) ---------- */
-      #overlay-view {
-        flex: 1;
-        padding: 24px;
-        overflow: auto;
-        display: none;
-      }
-      #overlay-view.active {
-        display: block;
-      }
-      #builder-view.hidden {
-        display: none;
-      }
-      .overlay-item {
-        border: 1px solid #3b444c;
-        border-radius: 6px;
-        padding: 12px 14px;
-        margin-bottom: 8px;
-        cursor: pointer;
-        max-width: 480px;
-      }
-      .overlay-item:hover {
-        background: #22272b;
-      }
-      .overlay-item .t {
-        font-weight: 600;
-        font-size: 13px;
-      }
-      .overlay-item .m {
-        font-size: 11px;
-        color: #9fadbc;
-        margin-top: 3px;
-      }
-      #overlay-back {
-        background: transparent;
-        border: none;
-        color: #579dff;
-        font-size: 13px;
-        cursor: pointer;
-        margin-bottom: 14px;
-        padding: 0;
-      }
     </style>
   </head>
   <body>
@@ -495,7 +452,6 @@
         </div>
         <h1 id="screen-title">Create New Trello Form</h1>
       </div>
-      <button class="nav-btn" id="nav-existing">View Existing Form</button>
       <button class="nav-btn" id="share-btn">Share</button>
       <button id="publish-btn">Save Form</button>
     </div>
@@ -513,14 +469,6 @@
 
     <div id="body-wrap">
       <div id="builder-view"></div>
-      <div id="overlay-view">
-        <button id="overlay-back">&#8592; Back to builder</button>
-        <div
-          id="overlay-title"
-          style="font-size: 15px; font-weight: 700; margin-bottom: 14px"
-        ></div>
-        <div id="overlay-list"></div>
-      </div>
     </div>
 
     <script>
@@ -1093,127 +1041,6 @@
         });
       }
 
-      // ---------- Overlay (Incomplete / Existing) ----------
-
-      function showOverlay(status) {
-        document.getElementById("builder-view").classList.add("hidden");
-        var overlay = document.getElementById("overlay-view");
-        overlay.classList.add("active");
-        document.getElementById("overlay-title").textContent =
-          status === "incomplete" ? "Incomplete Forms" : "Existing Forms";
-
-        var items = allForms.filter(function (f) {
-          return f.status === status && f.id !== draft.id;
-        });
-        var html =
-          items.length === 0
-            ? '<div class="hint">Nothing here yet.</div>'
-            : items
-                .map(function (f) {
-                  return (
-                    '<div class="overlay-item" data-id="' +
-                    f.id +
-                    '" style="display:flex;align-items:center;justify-content:space-between;gap:10px;">' +
-                    '<div style="flex:1;min-width:0;">' +
-                    '<div class="t">' +
-                    escapeHtml(f.title || "Untitled form") +
-                    "</div>" +
-                    '<div class="m">' +
-                    f.fields.length +
-                    " field(s)</div>" +
-                    "</div>" +
-                    '<div style="display:flex;gap:6px;">' +
-                    '<button class="icon-btn overlay-edit-btn" data-id="' +
-                    f.id +
-                    '" title="Edit this form">&#9998;</button>' +
-                    '<button class="icon-btn overlay-share-btn" data-id="' +
-                    f.id +
-                    '" title="Share this form">&#128279;</button>' +
-                    '<button class="icon-btn danger overlay-del-btn" data-id="' +
-                    f.id +
-                    '" title="Delete this form">&#128465;</button>' +
-                    "</div>" +
-                    "</div>"
-                  );
-                })
-                .join("");
-        document.getElementById("overlay-list").innerHTML = html;
-
-        document.querySelectorAll(".overlay-del-btn").forEach(function (btn) {
-          btn.addEventListener("click", function (e) {
-            e.stopPropagation();
-            var id = btn.getAttribute("data-id");
-            var form = allForms.find(function (f) {
-              return f.id === id;
-            });
-            if (
-              !confirm(
-                'Delete "' +
-                  (form ? form.title : "this form") +
-                  '"? This cannot be undone.',
-              )
-            )
-              return;
-            var forms = allForms.filter(function (f) {
-              return f.id !== id;
-            });
-            saveForms(forms).then(function () {
-              showOverlay(status);
-            });
-          });
-        });
-
-        document.querySelectorAll(".overlay-edit-btn").forEach(function (btn) {
-          btn.addEventListener("click", function (e) {
-            e.stopPropagation();
-
-            var id = btn.getAttribute("data-id");
-
-            draft = JSON.parse(
-              JSON.stringify(
-                allForms.find(function (f) {
-                  return f.id === id;
-                }),
-              ),
-            );
-
-            hideOverlay();
-            render();
-          });
-        });
-
-        document.querySelectorAll(".overlay-share-btn").forEach(function (btn) {
-          btn.addEventListener("click", function (e) {
-            e.stopPropagation();
-
-            var id = btn.getAttribute("data-id");
-
-            var form = allForms.find(function (f) {
-              return f.id === id;
-            });
-
-            if (!form) return;
-
-            // Replace this with your existing public form URL generation logic.
-            var shareUrl = form.shareUrl;
-
-            if (!shareUrl) {
-              alert("Share URL is not available for this form yet.");
-              return;
-            }
-
-            navigator.clipboard.writeText(shareUrl).then(function () {
-              alert("Form link copied to clipboard.");
-            });
-          });
-        });
-      }
-
-      function hideOverlay() {
-        document.getElementById("overlay-view").classList.remove("active");
-        document.getElementById("builder-view").classList.remove("hidden");
-      }
-
       // ---------- Init -----------
       // Note: closing is handled by Trello's native modal "X" now that the
       // custom back button is removed. Nothing autosaves, so closing without
@@ -1276,14 +1103,6 @@
             alert("Form link copied to clipboard.");
           });
         });
-      document
-        .getElementById("nav-existing")
-        .addEventListener("click", function () {
-          showOverlay("complete");
-        });
-      document
-        .getElementById("overlay-back")
-        .addEventListener("click", hideOverlay);
 
       // Click anywhere outside an open Labels/Members dropdown closes it.
       document.addEventListener("click", function () {
