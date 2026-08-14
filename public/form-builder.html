@@ -500,6 +500,17 @@
       <button id="publish-btn">Save Form</button>
     </div>
 
+    <div
+      id="publish-error"
+      style="
+        display: none;
+        background: #3b1b1b;
+        color: #f87168;
+        font-size: 12px;
+        padding: 8px 20px;
+      "
+    ></div>
+
     <div id="body-wrap">
       <div id="builder-view"></div>
       <div id="overlay-view">
@@ -1211,16 +1222,40 @@
       document
         .getElementById("publish-btn")
         .addEventListener("click", function () {
-          if (!draft.title.trim() || !draft.targetListId) {
-            alert(
-              "Give the form a title and pick a target list before publishing.",
-            );
+          var errors = [];
+          if (!draft.title.trim()) errors.push("a form title");
+          if (!draft.targetListId) errors.push("a target list");
+
+          if (errors.length) {
+            var msg =
+              "Please set " + errors.join(" and ") + " before publishing.";
+            var errEl = document.getElementById("publish-error");
+            if (errEl) {
+              errEl.textContent = msg;
+              errEl.style.display = "block";
+            }
+            console.warn("Quick Forms: publish blocked —", msg);
             return;
           }
+
+          var errElOk = document.getElementById("publish-error");
+          if (errElOk) errElOk.style.display = "none";
+
           clearTimeout(saveTimer);
-          persistDraft(true).then(function () {
-            t.closeModal();
-          });
+          persistDraft(true)
+            .then(function () {
+              t.closeModal();
+            })
+            .catch(function (err) {
+              console.error("Quick Forms: save failed", err);
+              var errEl2 = document.getElementById("publish-error");
+              if (errEl2) {
+                errEl2.textContent =
+                  "Save failed: " +
+                  (err && err.message ? err.message : "unknown error");
+                errEl2.style.display = "block";
+              }
+            });
         });
       document
         .getElementById("share-btn")
