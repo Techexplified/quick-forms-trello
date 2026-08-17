@@ -150,6 +150,10 @@
         border-color: #8c9bab;
         color: #e8eaed;
       }
+      .icon-btn.danger:hover {
+        border-color: #f87168;
+        color: #f87168;
+      }
       .empty-state {
         font-size: 13px;
         color: #9fadbc;
@@ -192,6 +196,11 @@
 
       function loadForms() {
         return t.get("board", "shared", "quickForms", []);
+      }
+
+      function saveForms(forms) {
+        allForms = forms;
+        return t.set("board", "shared", "quickForms", forms);
       }
 
       function escapeHtml(str) {
@@ -293,6 +302,9 @@
               '" title="Copy share link"' +
               (hasShareUrl ? "" : " disabled") +
               ">&#128279;</button>" +
+              '<button class="icon-btn danger delete-btn-action" data-id="' +
+              f.id +
+              '" title="Delete form">&#128465;</button>' +
               "</td>" +
               "</tr>"
             );
@@ -324,6 +336,30 @@
             if (!form || !form.shareUrl) return;
             navigator.clipboard.writeText(form.shareUrl).then(function () {
               alert("Form link copied to clipboard.");
+            });
+          });
+        });
+
+        document.querySelectorAll(".delete-btn-action").forEach(function (btn) {
+          btn.addEventListener("click", function (e) {
+            e.stopPropagation();
+            var id = btn.getAttribute("data-id");
+            var form = allForms.find(function (f) {
+              return f.id === id;
+            });
+            if (
+              !confirm(
+                'Delete "' +
+                  (form ? form.title : "this form") +
+                  '"? This cannot be undone.',
+              )
+            )
+              return;
+            var forms = allForms.filter(function (f) {
+              return f.id !== id;
+            });
+            saveForms(forms).then(function () {
+              render();
             });
           });
         });
