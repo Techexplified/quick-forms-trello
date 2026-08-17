@@ -31,17 +31,20 @@
         flex-shrink: 0;
       }
       #back-btn {
-        width: 34px;
-        height: 34px;
-        border-radius: 50%;
+        background: transparent;
         border: none;
-        background: #2c333a;
-        color: #e8eaed;
-        font-size: 16px;
+        color: #9fadbc;
+        font-size: 28px;
+        line-height: 1;
         cursor: pointer;
+        padding: 4px 10px 4px 0;
+        flex-shrink: 0;
       }
       #back-btn:hover {
-        background: #3b444c;
+        color: #e8eaed;
+      }
+      #topbar .title-block {
+        display: none;
       }
       #topbar .title-block {
         flex: 1;
@@ -446,6 +449,7 @@
   </head>
   <body>
     <div id="topbar">
+      <button id="back-btn" title="Back to forms list">&#8592;</button>
       <div class="title-block">
         <div class="breadcrumb">
           <b>FORM BUILDER</b> &middot; Trello Card Generator
@@ -1083,6 +1087,11 @@
                 errEl2.style.display = "block";
               }
             });
+        });
+      document
+        .getElementById("back-btn")
+        .addEventListener("click", function () {
+          t.closeModal();
         });
       document
         .getElementById("share-btn")
