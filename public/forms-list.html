@@ -219,7 +219,7 @@
           title: "Quick Forms \u2014 Form Builder",
           args: { formId: formId || "" },
           callback: function () {
-            // runs when the form builder modal is closed; refresh this list
+            // runs when the form builder modal is closed;  refresh this list
             loadForms().then(function (forms) {
               allForms = forms || [];
               render();
