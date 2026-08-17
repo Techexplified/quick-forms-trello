@@ -231,7 +231,7 @@
           fullscreen: true,
           title: "Forms",
           callback: function () {
-            // runs when the modal is closed; refresh state from storage
+            // runs when the modal is closed;refresh state from storage
             loadForms().then(function (forms) {
               state.forms = forms || [];
               goto("menu");
