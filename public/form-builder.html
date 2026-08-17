@@ -39,6 +39,7 @@
         cursor: pointer;
         padding: 4px 10px 4px 0;
         flex-shrink: 0;
+        margin-right: auto;
       }
       #back-btn:hover {
         color: #e8eaed;
@@ -1091,7 +1092,11 @@
       document
         .getElementById("back-btn")
         .addEventListener("click", function () {
-          t.closeModal();
+          t.modal({
+            url: "./forms-list.html",
+            fullscreen: true,
+            title: "Forms",
+          });
         });
       document
         .getElementById("share-btn")
